@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10213a">
+  <title>Dynamic Pricing Lab · Online Retail II</title>
+  <meta name="description" content="Bảng điều khiển mô phỏng định giá động cho 20 sản phẩm trên dữ liệu Online Retail II 2009–2011.">
+  <link rel="stylesheet" href="/assets/styles.css">
+  <script src="/assets/app.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Điều hướng">
+      <a class="brand" href="#overview" aria-label="Dynamic Pricing Lab, về đầu trang">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span><strong>PRICING<span class="brand-dot">.</span>LAB</strong><small>BUSINESS INTELLIGENCE</small></span>
+      </a>
+      <div class="sidebar-label">Điều hướng</div>
+      <nav class="side-nav">
+        <a class="nav-link active" href="#overview"><span class="nav-icon">◫</span> Tổng quan</a>
+        <a class="nav-link" href="#simulator"><span class="nav-icon">◇</span> Mô phỏng giá</a>
+        <a class="nav-link" href="#catalog"><span class="nav-icon">▦</span> Danh mục sản phẩm</a>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="status-dot"><i></i> <span id="api-status">Đang kết nối API…</span></div>
+        <p>Online Retail II<br>Giai đoạn 2009–2011</p>
+        <div class="version">Model <span id="side-model-version">—</span></div>
+      </div>
+    </aside>
+
+    <main class="main-content" id="overview">
+      <header class="topbar">
+        <div class="topbar-title"><span class="mobile-brand">PRICING<span>.</span>LAB</span><span class="breadcrumb">Bàn định giá <b>/</b> Online Retail II</span></div>
+        <div class="topbar-right"><span class="top-pill"><i></i> Bản demo lịch sử</span><a class="docs-link" href="/docs" target="_blank" rel="noopener">Tài liệu API <span aria-hidden="true">↗</span></a></div>
+      </header>
+      <nav class="mobile-nav" aria-label="Điều hướng trên điện thoại"><a href="#simulator">Thử giá</a><a href="#catalog">Sản phẩm</a></nav>
+
+      <div class="page-wrap">
+        <section class="hero" aria-labelledby="hero-title">
+          <div class="hero-copy">
+            <span class="hero-context">Online Retail II · Mô phỏng 2009–2011</span>
+            <h1 id="hero-title">Giá nào tạo ra<br>doanh thu tốt hơn?</h1>
+            <p>Thử giá cho từng sản phẩm, xem lượng bán dự báo và mức độ chắc chắn trước khi đưa ra quyết định.</p>
+          </div>
+          <div class="hero-visual" aria-label="Ba bước của mô hình định giá">
+            <div><span>1</span><strong>Dự báo lượng bán</strong></div>
+            <div><span>2</span><strong>Thử các mức giá</strong></div>
+            <div><span>3</span><strong>Đề xuất có xét rủi ro</strong></div>
+          </div>
+        </section>
+
+        <section class="metrics" aria-label="Chỉ số dữ liệu">
+          <article class="metric"><div class="metric-icon teal">▦</div><div><span>Sản phẩm demo</span><strong id="metric-products">—</strong><small>Được chọn bởi bước 3</small></div></article>
+          <article class="metric"><div class="metric-icon blue">◫</div><div><span>Tuần có bán</span><strong id="metric-weeks">—</strong><small>Tổng của 20 sản phẩm</small></div></article>
+          <article class="metric"><div class="metric-icon purple">◷</div><div><span>Giai đoạn dữ liệu</span><strong id="metric-period">2009–2011</strong><small id="metric-period-sub">Online Retail II</small></div></article>
+          <article class="metric"><div class="metric-icon amber">↗</div><div><span>Sản phẩm trong mô hình</span><strong id="metric-model-products">—</strong><small>API gốc dùng để dự báo</small></div></article>
+        </section>
+
+        <div class="section-heading" id="simulator"><div><span class="eyebrow">Bàn định giá</span><h2>Thử một quyết định giá</h2><p>Chọn sản phẩm và ngày trong giai đoạn dữ liệu để xem mô hình đề xuất.</p></div><span class="section-note">Mục tiêu: <strong>Doanh thu</strong></span></div>
+
+        <section class="workbench" aria-label="Công cụ mô phỏng định giá">
+          <form class="panel scenario-panel" id="scenario-form">
+            <div class="panel-header"><div class="panel-icon">◇</div><div><h3>Thiết lập kịch bản</h3><p>Giá có thể thay đổi trong giới hạn bạn chọn.</p></div></div>
+            <div class="field"><label for="product-select">Sản phẩm</label><div class="select-wrap"><select id="product-select" name="sku" required></select></div></div>
+            <div class="product-summary" id="product-summary"><div class="product-skeleton"></div></div>
+            <div class="field-grid">
+              <div class="field"><label for="scenario-date">Ngày mô phỏng</label><input id="scenario-date" name="date" type="date" required></div>
+              <div class="field"><label for="current-price">Giá hiện tại</label><div class="input-suffix"><input id="current-price" name="current_price" type="number" min="0.01" step="0.01" inputmode="decimal" required><span>đv</span></div></div>
+            </div>
+            <div class="price-source"><span id="price-source-label">Đang tải giá tham chiếu…</span><button type="button" id="reset-price" class="text-button">Dùng giá tham chiếu</button></div>
+            <div class="field"><label for="max-change">Giới hạn điều chỉnh giá</label><div class="select-wrap"><select id="max-change" name="max_change"><option value="0.05">±5% so với giá hiện tại</option><option value="0.10" selected>±10% so với giá hiện tại</option><option value="0.15">±15% so với giá hiện tại</option><option value="0.20">±20% so với giá hiện tại</option></select></div></div>
+            <button type="submit" class="submit-button" id="submit-button"><span>Tính giá đề xuất</span><span aria-hidden="true">→</span></button>
+            <p class="form-hint">Giá tham chiếu lấy từ API mô hình; bạn có thể nhập giá hiện tại khác. Không có giá vốn nên mô hình tối ưu doanh thu. Kết quả chỉ dùng để mô phỏng.</p>
+          </form>
+
+          <article class="panel result-panel" id="result-panel" aria-live="polite">
+            <div class="panel-header result-head"><div class="panel-icon dark">↗</div><div><h3>Kết quả đề xuất</h3><p>Được tính từ mô hình nhu cầu và độ co giãn giá.</p></div><span class="result-badge" id="result-badge">Chưa tính</span></div>
+            <div id="result-empty" class="result-empty"><div class="empty-graphic"><span>↗</span><i></i><i></i><i></i></div><strong>Sẵn sàng cho kịch bản đầu tiên</strong><p>Điền thông tin bên trái và bấm “Tính giá đề xuất” để xem giá, doanh thu và mức độ tin cậy.</p></div>
+            <div id="result-content" class="result-content" hidden>
+              <div class="price-comparison"><div><span>Giá hiện tại</span><strong id="result-current">—</strong></div><span class="price-arrow">→</span><div><span>Giá đề xuất</span><strong id="result-recommended">—</strong></div></div>
+              <div class="result-change"><span id="result-action">—</span><strong id="result-change">—</strong></div>
+              <div class="result-stats"><div><span>Lượng bán hiện tại / tuần</span><strong id="result-units-current">—</strong></div><div><span>Lượng bán dự kiến / tuần</span><strong id="result-units-new">—</strong></div><div><span>Doanh thu hiện tại</span><strong id="result-revenue-current">—</strong></div><div><span>Doanh thu dự kiến</span><strong id="result-revenue-new">—</strong></div><div><span>Thay đổi doanh thu</span><strong id="result-gain">—</strong></div><div><span>Xác suất tăng doanh thu*</span><strong id="result-probability">—</strong></div></div>
+              <p class="result-reason" id="result-reason"></p>
+              <div class="warnings" id="result-warnings"></div>
+              <p class="result-footnote">*Theo phân phối độ co giãn của mô hình; không bảo đảm kết quả bán hàng thực tế.</p>
+            </div>
+          </article>
+        </section>
+
+        <div class="section-heading chart-heading"><div><span class="eyebrow">Dữ liệu hỗ trợ</span><h2>So sánh các mức giá</h2><p id="chart-product-name">Đường cầu và doanh thu từ API mô hình.</p></div></div>
+        <section class="charts-grid" aria-label="Biểu đồ phân tích">
+          <article class="panel chart-panel"><div class="chart-top"><div><h3>Lượng bán theo giá</h3><p>Dự báo số lượng mỗi tuần theo kịch bản trung tâm</p></div><span class="chart-period" id="demand-range">±10%</span></div><div class="chart-legend"><span><i class="legend-qty"></i> Lượng bán</span><span><i class="legend-current"></i> Giá hiện tại</span><span><i class="legend-recommended"></i> Giá đề xuất</span></div><div id="demand-chart" class="chart-canvas" role="img" aria-label="Biểu đồ lượng bán dự báo theo giá"></div><p class="chart-scale" id="demand-scale">—</p><div class="chart-axis"><span id="demand-start">—</span><span id="demand-end">—</span></div></article>
+          <article class="panel chart-panel"><div class="chart-top"><div><h3>Doanh thu theo giá</h3><p>Kịch bản trung tâm theo độ co giãn trung bình</p></div><span class="chart-period" id="curve-range">±10%</span></div><div class="chart-legend"><span><i class="legend-revenue"></i> Doanh thu</span><span><i class="legend-current"></i> Giá hiện tại</span><span><i class="legend-recommended"></i> Giá đề xuất</span></div><div id="curve-chart" class="chart-canvas" role="img" aria-label="Biểu đồ doanh thu dự kiến theo giá"></div><div class="chart-axis"><span id="curve-start">—</span><span id="curve-end">—</span></div></article>
+        </section>
+
+        <div class="section-heading catalog-heading" id="catalog"><div><span class="eyebrow">Danh mục</span><h2>20 sản phẩm trong hệ thống</h2><p>Chỉ các sản phẩm được bước chọn mẫu đưa vào bản demo.</p></div></div>
+        <section class="panel catalog-panel" aria-label="Danh mục sản phẩm">
+          <div class="catalog-tools"><div class="search-field"><span aria-hidden="true">⌕</span><input id="product-search" type="search" placeholder="Tìm theo tên hoặc SKU…" aria-label="Tìm sản phẩm"></div><div class="filter-chips" id="tier-filters" aria-label="Lọc theo nhóm giá"><button type="button" class="chip active" data-tier="all">Tất cả</button><button type="button" class="chip" data-tier="re">Rẻ</button><button type="button" class="chip" data-tier="vua_thap">Vừa thấp</button><button type="button" class="chip" data-tier="vua_cao">Vừa cao</button><button type="button" class="chip" data-tier="dat">Đắt</button></div></div>
+          <div class="table-wrap"><table><thead><tr><th>Sản phẩm</th><th>Nhóm giá</th><th>Giá tham chiếu</th><th>Tuần có bán</th><th>Độ co giãn</th><th></th></tr></thead><tbody id="product-table"></tbody></table></div>
+          <p id="catalog-empty" class="catalog-empty" hidden>Không tìm thấy sản phẩm phù hợp.</p>
+        </section>
+
+        <footer class="footer"><span>Dynamic Pricing Lab · Đồ án Nghiệp vụ thông minh</span><span>API gốc tính trực tiếp từ mô hình · Kết quả chưa được lưu vào SQL Server</span></footer>
+      </div>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>
