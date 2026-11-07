@@ -61,12 +61,13 @@ def train_model(X_train, y_train, feature_cols):
     print("\n[3] Training XGBoost...")
     params = {
         # Cấu hình chọn bằng validation (tune_model_online_retail.py)
-        "n_estimators": 400,
-        "learning_rate": 0.05,
-        "max_depth": 6,
-        "min_child_weight": 5,
+        "n_estimators": 273,
+        "learning_rate": 0.02,
+        "max_depth": 8,
+        "min_child_weight": 10,
         "subsample": 0.8,
-        "colsample_bytree": 0.8,
+        "colsample_bytree": 0.9,
+        "reg_lambda": 5,
         "random_state": 42,
         "verbosity": 0,
         # Giá tương đối tăng -> ln(qty) dự báo không tăng
