@@ -34,6 +34,7 @@ compare_features_out/
 compare_features_diag_out/
 compare_outliers_out/
 do_tin_cay_out/
+so_sanh_out/
 
 # Generated charts and figures
 figures/
@@ -42,6 +43,7 @@ figures/
 __pycache__/
 *.py[cod]
 *.pyo
+catboost_info/
 
 # Virtual environment
 .venv/

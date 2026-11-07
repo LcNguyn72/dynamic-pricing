@@ -37,14 +37,17 @@ TEN_HANH_DONG = {"lower": "giảm giá", "raise": "tăng giá", "keep": "giữ n
 
 # ----------------------------------------------------------------------------- chọn sản phẩm minh họa
 def chon_3_san_pham(t):
+    """Chọn 3 sản phẩm theo HỆ SỐ BIẾN THIÊN (CV = độ lệch chuẩn / trung bình lượng bán tuần).
+    CV thấp nhất, CV cao nhất, và CV gần trung vị nhất trong các sản phẩm còn lại.
+    Tên gọi phản ánh đúng tiêu chí CV, không phải đánh giá tuyệt đối về độ ổn định."""
     th = t.groupby("sku").agg(n=("qty", "size"), tb=("qty", "mean"), sd=("qty", "std")).reset_index()
     th = th[th["n"] >= 60].copy()
     th["cv"] = th["sd"] / th["tb"]
-    on_dinh = th.loc[th["cv"].idxmin(), "sku"]
-    dot_bien = th.loc[th["cv"].idxmax(), "sku"]
-    con_lai = th[~th["sku"].isin([on_dinh, dot_bien])]
-    dien_hinh = con_lai.loc[(con_lai["cv"] - th["cv"].median()).abs().idxmin(), "sku"]
-    return [("bán ổn định", on_dinh), ("bán đột biến", dot_bien), ("điển hình", dien_hinh)]
+    thap = th.loc[th["cv"].idxmin()]
+    cao = th.loc[th["cv"].idxmax()]
+    con = th[~th["sku"].isin([thap["sku"], cao["sku"]])]
+    gan = con.loc[(con["cv"] - th["cv"].median()).abs().idxmin()]
+    return [("CV thấp nhất", thap), ("CV cao nhất", cao), ("CV gần trung vị", gan)]
 
 
 def chon_4_sku_engine(engine, sku_chon):
@@ -66,23 +69,22 @@ def ve_01(t, q10, q90):
     nhom = chon_3_san_pham(t)
     fig, axes = plt.subplots(3, 1, figsize=(13, 10.5))
     rows = []
-    for i, (ax, (ten_nhom, sku)) in enumerate(zip(axes, nhom)):
+    for i, (ax, (ten_nhom, r)) in enumerate(zip(axes, nhom)):
+        sku, tb, cv = r["sku"], r["tb"], r["cv"]
         d = t[t["sku"] == sku].sort_values("week")
         te = d[d["is_test"]]
-        thap, cao = te["du_bao"] * np.exp(q10), te["du_bao"] * np.exp(q90)
         ax.plot(d["week"], d["qty"], color=MAU["xanh"], lw=1.2, label="Thực tế (mọi tuần)")
         ax.plot(d["week"], d["du_bao"], color=MAU["xam"], lw=1, alpha=0.7, label="Dự báo ở tuần train (đã học)")
-        ax.vlines(te["week"], thap, cao, color=MAU["cam"], alpha=0.5, lw=3, label="Dải 10-90% (phân vị sai số ln của tập test)")
         ax.scatter(te["week"], te["du_bao"], color=MAU["do"], s=24, zorder=3, label="Dự báo ở tuần test")
         ax.scatter(te["week"], te["qty"], color=MAU["den"], s=18, marker="x", zorder=3, label="Thực tế ở tuần test")
         mae = float(np.mean(np.abs(te["du_bao"] - te["qty"])))
-        ax.set_title(f"{sku} ({ten_nhom}) - MAE trên tuần test = {mae:.1f}", fontsize=10)
+        ax.set_title(f"{sku} ({ten_nhom}; TB = {tb:.1f}, CV = {cv:.2f}) - MAE trên tuần test = {mae:.1f}", fontsize=10)
         ax.set_ylabel("Lượng bán / tuần")
         if i == 0:
-            ax.legend(ncol=3, fontsize=8, loc="upper center", bbox_to_anchor=(0.5, 1.45))
-        rows.append(d.assign(nhom=ten_nhom, du_bao_thap=np.where(d["is_test"], d["du_bao"] * np.exp(q10), np.nan),
-                             du_bao_cao=np.where(d["is_test"], d["du_bao"] * np.exp(q90), np.nan))
-                    [["nhom", "sku", "week", "is_test", "qty", "du_bao", "du_bao_thap", "du_bao_cao"]]
+            ax.legend(ncol=2, fontsize=8, loc="upper center", bbox_to_anchor=(0.5, 1.42))
+        rows.append(d.assign(nhom=ten_nhom, cv=cv, tb_san_pham=tb,
+                             la_test=d["is_test"], sai_so_tuyet_doi=np.where(d["is_test"], np.abs(d["du_bao"] - d["qty"]), np.nan))
+                    [["nhom", "sku", "week", "la_test", "qty", "du_bao", "sai_so_tuyet_doi", "tb_san_pham", "cv"]]
                     .rename(columns={"qty": "thuc_te"}))
     fig.tight_layout()
     H.luu(fig, "fig01_thuc_te_du_bao_theo_tuan", pd.concat(rows, ignore_index=True))
@@ -437,6 +439,16 @@ def ve_09(engine, sku_chon):
 
 
 # ----------------------------------------------------------------------------- chạy chính
+def _an_toan(ten, ham):
+    """Chạy một biểu đồ; nếu lỗi thì in lỗi và tiếp tục các biểu đồ khác"""
+    import traceback
+    try:
+        ham()
+    except Exception as e:
+        print(f"  LỖI ở {ten}: {type(e).__name__}: {e}")
+        traceback.print_exc()
+
+
 def main():
     print("=" * 70)
     print("VẼ BIỂU ĐỒ KẾT QUẢ MÔ HÌNH")
@@ -464,16 +476,16 @@ def main():
         print(f"  Danh sách 20 sản phẩm: {nguon}")
     ds4 = chon_4_sku_engine(engine, sku_chon)
 
-    ve_01(t, q10, q90)
-    ve_02(te)
-    ve_03(te)
-    ve_04(te)
-    ve_05(te)
-    ve_06(engine, ds4)
-    ve_07(t, model, feats)
-    ve_08()
-    ve_09(engine, sku_chon)
-    ve_10(engine, ds4)
+    _an_toan('ve_01(t, q10, q90)', lambda: ve_01(t, q10, q90))
+    _an_toan('ve_02(te)', lambda: ve_02(te))
+    _an_toan('ve_03(te)', lambda: ve_03(te))
+    _an_toan('ve_04(te)', lambda: ve_04(te))
+    _an_toan('ve_05(te)', lambda: ve_05(te))
+    _an_toan('ve_06(engine, ds4)', lambda: ve_06(engine, ds4))
+    _an_toan('ve_07(t, model, feats)', lambda: ve_07(t, model, feats))
+    _an_toan('ve_08()', lambda: ve_08())
+    _an_toan('ve_09(engine, sku_chon)', lambda: ve_09(engine, sku_chon))
+    _an_toan('ve_10(engine, ds4)', lambda: ve_10(engine, ds4))
     H.cap_nhat_readme()
     print("Xong. Xem thư mục ./figures")
 

@@ -47,8 +47,8 @@ warnings.filterwarnings("ignore")
 OUT = "./compare_outliers_out"
 FEATS = ["log_price_ratio", "sku_lp_med", "sku_base", "month", "woy",
          "sku_lq_std", "sku_lp_std", "sku_q4_effect"]
-PARAMS = dict(n_estimators=400, learning_rate=0.05, max_depth=6, min_child_weight=5,
-              subsample=0.8, colsample_bytree=0.8, random_state=42, verbosity=0)
+PARAMS = dict(n_estimators=273, learning_rate=0.02, max_depth=8, min_child_weight=10,
+              subsample=0.8, colsample_bytree=0.9, reg_lambda=5, random_state=42, verbosity=0)
 N_BOOT = 300
 MIN_TRAIN_ROWS = 500          # dưới ngưỡng này coi như không đủ dữ liệu train để huấn luyện
 PHIEN_BAN = [
