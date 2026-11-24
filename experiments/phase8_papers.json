@@ -1,0 +1,68 @@
+[
+  {
+    "id": "song_2026",
+    "title": "Song (2026)",
+    "kind": "Định giá và dự báo",
+    "source_url": "https://link.springer.com/article/10.1007/s10791-026-10745-2",
+    "dataset_scope": "M5 gộp theo sản phẩm–tuần",
+    "protocol": "Chia 70/15/15 theo thời gian; PPO trên simulator, 200 chu kỳ × 5 lượt",
+    "published_metric": "RMSE 22,3 ± 0,7; doanh thu mô phỏng chuẩn hóa 883 ± 7",
+    "comparison_level": "method_only",
+    "reason": "Không công bố đúng cohort 20 chuỗi CA_1 và cùng simulator/thang chuẩn hóa của nhóm."
+  },
+  {
+    "id": "elreedy_2021",
+    "title": "Elreedy và cộng sự (2021)",
+    "kind": "Định giá",
+    "source_url": "https://link.springer.com/content/pdf/10.1007/s00500-021-06047-y.pdf",
+    "dataset_scope": "10 sản phẩm M5 dùng ước lượng cầu tuyến tính",
+    "protocol": "Chính sách chạy trên cầu sinh từ hệ số; 100 bước × 100 lượt",
+    "published_metric": "Revenue gain so với oracle: 99,82% cho một sản phẩm trong Bảng 5",
+    "comparison_level": "method_only",
+    "reason": "Khác sản phẩm, hàm cầu, oracle và định nghĩa doanh thu."
+  },
+  {
+    "id": "yang_2026",
+    "title": "Yang và cộng sự (2026, preprint)",
+    "kind": "Định giá",
+    "source_url": "https://arxiv.org/html/2605.21263",
+    "dataset_scope": "54 item M5, gộp tuần qua các cửa hàng",
+    "protocol": "Simulator Poisson, 200 bước với hành động giá 54 chiều",
+    "published_metric": "Cumulative regret và khoảng tin cậy 95% trên đồ thị",
+    "comparison_level": "method_only",
+    "reason": "Khác cohort, môi trường cầu và chỉ số; không có bảng doanh thu cùng giao thức."
+  },
+  {
+    "id": "m5_competition_2022",
+    "title": "M5 Accuracy Competition (2022)",
+    "kind": "Dự báo",
+    "source_url": "https://doi.org/10.1016/j.ijforecast.2021.11.013",
+    "dataset_scope": "30.490 chuỗi item–store theo ngày, 12 cấp phân cấp",
+    "protocol": "Dự báo 28 ngày; chấm WRMSSE",
+    "published_metric": "Phương pháp đứng đầu: WRMSSE 0,520",
+    "comparison_level": "method_only",
+    "reason": "Khác độ hạt, horizon, tập chuỗi và chỉ số RMSE/WRMSSE."
+  },
+  {
+    "id": "iyer_2026",
+    "title": "Iyer và Dabbeeru (2026, preprint)",
+    "kind": "Dự báo",
+    "source_url": "https://arxiv.org/abs/2610.25170",
+    "dataset_scope": "30.490 chuỗi item–store M5 theo ngày",
+    "protocol": "Bốn cửa sổ dự báo cuốn chiếu, mỗi cửa sổ 28 ngày",
+    "published_metric": "Item–store: ensemble WRMSSE 0,834; LightGBM 0,861",
+    "comparison_level": "method_only",
+    "reason": "Khác tập chuỗi, độ hạt, horizon và thước đo."
+  },
+  {
+    "id": "peng_2026",
+    "title": "Peng và cộng sự (2026)",
+    "kind": "Dự báo M5",
+    "source_url": "https://www.mdpi.com/1999-4893/19/5/382",
+    "dataset_scope": "Một chuỗi M5 tại CA_2 theo ngày",
+    "protocol": "Giữ 28 ngày cuối làm test; phần định giá dùng nguồn dữ liệu khác",
+    "published_metric": "RMSE dự báo 6,65",
+    "comparison_level": "method_only",
+    "reason": "Không có kết quả định giá trên M5; chuỗi, độ hạt và test khác."
+  }
+]

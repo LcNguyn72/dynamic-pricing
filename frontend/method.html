@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0c2731">
+  <title>Phương pháp & chỉ số | Pricing Lab</title>
+  <meta name="description" content="Quy trình chọn giá M5, kiểm định mô hình cầu, so sánh thuật toán và đối chiếu các bài báo cùng dataset.">
+  <link rel="stylesheet" href="/assets/styles.css">
+  <link rel="stylesheet" href="/assets/phase8.css">
+  <script src="/assets/method.js" defer></script>
+</head>
+<body data-page="m5-method">
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Điều hướng">
+      <a class="brand" href="/" aria-label="Về tổng quan"><span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span><strong>PRICING<span class="brand-dot">.</span>LAB</strong></a>
+      <nav class="side-nav">
+        <a class="nav-link" href="/"><span class="nav-icon">◫</span> Tổng quan</a>
+        <a class="nav-link" href="/products.html"><span class="nav-icon">≡</span> Sản phẩm demo</a>
+        <a class="nav-link" href="/research.html"><span class="nav-icon">▤</span> Thí nghiệm</a>
+        <a class="nav-link" href="/price-m5.html"><span class="nav-icon">◇</span> Đề xuất giá M5</a>
+        <a class="nav-link active" href="/method.html" aria-current="page"><span class="nav-icon">◎</span> Phương pháp</a>
+      </nav>
+      <div class="sidebar-foot"><div class="status-dot"><i></i> <span id="api-status">Đang kết nối…</span></div></div>
+    </aside>
+    <main class="main-content">
+      <header class="topbar"><div class="topbar-title"><span class="mobile-brand">PRICING<span>.</span>LAB</span><span class="breadcrumb">Phương pháp và chỉ số</span></div><div class="topbar-right"><span class="top-pill">M5 · CA_1</span></div></header>
+      <nav class="mobile-nav" aria-label="Điều hướng trên điện thoại"><a href="/">Tổng quan</a><a href="/products.html">Sản phẩm</a><a href="/research.html">Thí nghiệm</a><a href="/price-m5.html">Giá M5</a><a href="/method.html" aria-current="page">Phương pháp</a></nav>
+
+      <div class="page-wrap m5-page m5-method-page">
+        <header class="m5-heading"><div><h1>Một mức giá cần cả bằng chứng</h1><p>Cách chúng tôi chọn phương pháp, kiểm tra kết quả và đối chiếu các nghiên cứu dùng M5.</p></div><a href="/price-m5.html" class="m5-heading-link">Thử một mức giá M5</a></header>
+        <div id="method-loading" class="m5-message" role="status" aria-live="polite">Đang đọc chỉ số thí nghiệm…</div>
+        <div id="method-content" hidden>
+          <section class="m5-verdict" aria-labelledby="verdict-title"><div><span class="m5-verdict-label">Kết luận kiểm định</span><h2 id="verdict-title">Giá đề xuất vẫn là kết quả thí nghiệm</h2><p id="verdict-copy">—</p></div><div class="m5-verdict-side"><span>Chính sách chung theo validation</span><strong id="verdict-policy">—</strong><small id="verdict-cohort">—</small></div></section>
+          <div class="m5-facts"><div><span>Chuỗi M5 huấn luyện</span><strong id="fact-series">—</strong></div><div><span>SKU đánh giá giá</span><strong id="fact-skus">—</strong></div><div><span>Tuần test hợp lệ</span><strong id="fact-weeks">—</strong></div></div>
+
+          <section class="m5-section" aria-labelledby="process-title"><div class="m5-section-head"><h2 id="process-title">Giá được tính như thế nào?</h2><p>Đầu ra là giá nhằm tối đa doanh thu dự báo, chưa phải lợi nhuận.</p></div><ol class="m5-process"><li><strong>Chuẩn bị dữ liệu</strong><span>20 chuỗi item–store tại CA_1; 12 tuần trước quyết định, chia 70/15/15 theo thời gian.</span></li><li><strong>Dự báo cầu</strong><span>Transformer có giá được huấn luyện trên train; năm seed cho biết mức độ khác nhau giữa các lượt.</span></li><li><strong>Chọn giá</strong><span>Thử lưới 81 giá và giá giữ nguyên trong miền train, tối đa ±10%; đối chiếu PPO, DDPG, SAC và quy tắc đơn giản.</span></li><li><strong>Kiểm định</strong><span>Chọn theo validation rồi chấm lại cùng hành động dưới các giả định cầu khác; doanh thu ở giá mới vẫn là mô phỏng.</span></li></ol></section>
+
+          <section class="m5-section" aria-labelledby="forecast-title"><div class="m5-section-head"><h2 id="forecast-title">Transformer theo Song dự báo ra sao?</h2><p>Test trên 20 chuỗi M5, ở giá đã bán; RMSE và MAE càng thấp càng tốt.</p></div><div class="panel m5-data-panel"><div class="m5-table-scroll"><table class="m5-table"><thead><tr><th>Mô hình</th><th>Tuần</th><th>RMSE</th><th>MAE</th><th>Diễn giải</th></tr></thead><tbody id="forecast-rows"></tbody></table></div><p class="m5-table-note">Năm seed Transformer được huấn luyện riêng. Mốc “dùng tuần trước” lặp lại cùng giá trị qua năm seed; đây là phép kiểm tra dự báo, không kiểm tra lượng cầu ở giá chưa bán.</p></div></section>
+
+          <section class="m5-section" aria-labelledby="demand-title"><div class="m5-section-head"><h2 id="demand-title">Mô hình cầu có đáng tin?</h2><p>RMSE càng thấp càng tốt. Chỉ kiểm tra ở giá đã bán.</p></div><div class="panel m5-data-panel"><div class="m5-table-scroll"><table class="m5-table"><thead><tr><th>Phạm vi</th><th>Số tuần</th><th>Mô hình chọn trong train</th><th>Dùng tuần trước</th><th>Kết quả</th></tr></thead><tbody id="demand-rows"></tbody></table></div><p class="m5-table-note" id="demand-note">—</p></div></section>
+
+          <section class="m5-section" aria-labelledby="policy-title"><div class="m5-section-head"><h2 id="policy-title">Các cách chọn giá trên cùng tuần M5</h2><p>Doanh thu kỳ vọng trong simulator so với giữ giá; dấu ± là biến động qua seed.</p></div><div class="panel m5-data-panel"><div class="m5-table-scroll"><table class="m5-table"><thead><tr><th>Phương pháp</th><th>Validation</th><th>Test thăm dò</th><th>Vai trò</th></tr></thead><tbody id="policy-rows"></tbody></table></div><p class="m5-table-note">Một chính sách chung được chọn trên validation: giữ giá. Quy tắc riêng SKU của Phase 6 là phân tích thăm dò.</p></div></section>
+
+          <section class="m5-section" aria-labelledby="robust-title"><div class="m5-section-head"><h2 id="robust-title">Nếu đổi giả định cầu?</h2><p>Giữ nguyên mọi mức giá đã chọn; chỉ đổi mô hình dùng để chấm doanh thu.</p></div><div class="m5-robust-layout"><div class="m5-robust-lead"><span>Quy tắc riêng SKU trên 174 tuần test</span><div><strong id="robust-original">—</strong><span aria-hidden="true">→</span><strong id="robust-flat">—</strong></div><p>Giá giảm chỉ có lợi nếu cầu tăng đủ khi giá giảm. M5 không ghi lượng cầu tại giá chưa bán.</p></div><div class="panel m5-data-panel"><div id="robust-rows" class="m5-robust-rows"></div></div></div></section>
+
+          <section class="m5-section" aria-labelledby="papers-title"><div class="m5-section-head"><h2 id="papers-title">Các bài báo cùng dữ liệu M5</h2><p>Hiển thị số gốc để hiểu thiết kế; không xếp hạng khác giao thức.</p></div><div class="m5-paper-filter" role="group" aria-label="Lọc nguồn so sánh"><button type="button" data-filter="all" aria-pressed="true">Tất cả</button><button type="button" data-filter="pricing" aria-pressed="false">Định giá</button><button type="button" data-filter="forecast" aria-pressed="false">Dự báo</button></div><div id="paper-list" class="m5-paper-list"></div><p class="m5-paper-foot">Chỉ so số trực tiếp khi cùng sản phẩm, độ hạt, cách chia, horizon, chỉ số và simulator. <a href="/research.html">Xem kết quả dự báo chi tiết của nhóm</a>.</p></section>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

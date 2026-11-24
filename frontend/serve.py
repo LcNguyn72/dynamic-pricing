@@ -17,8 +17,14 @@ from urllib.request import Request, urlopen
 FRONTEND_DIR = Path(__file__).resolve().parent
 SELECTED_CSV = FRONTEND_DIR.parent / "models_2y" / "selected_products_online_retail.csv"
 BACKEND = "http://127.0.0.1:8000"
-GET_ROUTES = {"/health", "/model_info", "/products"}
-POST_ROUTES = {"/recommend", "/recommend/batch"}
+GET_ROUTES = {"/health", "/model_info", "/products", "/demo/products",
+              "/research/forecast/overview", "/research/forecast/series",
+              "/research/pricing/overview", "/research/pricing/replay",
+              "/research/pricing/scenario/options",
+              "/research/price/options", "/research/method/overview"}
+POST_ROUTES = {"/recommend", "/recommend/batch", "/demo/simulations",
+               "/research/pricing/scenario", "/research/price/recommend",
+               "/research/price/compare"}
 
 
 class FrontendHandler(BaseHTTPRequestHandler):
@@ -39,7 +45,8 @@ class FrontendHandler(BaseHTTPRequestHandler):
         headers = {"Content-Type": "application/json"} if body is not None else {}
         request = Request(url, data=body, headers=headers, method=self.command)
         try:
-            with urlopen(request, timeout=15) as response:
+            timeout = 45 if backend_path == "/research/price/compare" else 15
+            with urlopen(request, timeout=timeout) as response:
                 self.send_bytes(response.status, response.read(),
                                 response.headers.get("Content-Type", "application/json"))
         except HTTPError as error:
@@ -53,7 +60,18 @@ class FrontendHandler(BaseHTTPRequestHandler):
         path = parsed.path
         static = {
             "/": ("index.html", "text/html; charset=utf-8"),
+            "/products.html": ("products.html", "text/html; charset=utf-8"),
+            "/product.html": ("product.html", "text/html; charset=utf-8"),
+            "/research.html": ("research.html", "text/html; charset=utf-8"),
+            "/price-m5.html": ("price-m5.html", "text/html; charset=utf-8"),
+            "/method.html": ("method.html", "text/html; charset=utf-8"),
             "/assets/app.js": ("app.js", "text/javascript; charset=utf-8"),
+            "/assets/browse.js": ("browse.js", "text/javascript; charset=utf-8"),
+            "/assets/research.js": ("research.js", "text/javascript; charset=utf-8"),
+            "/assets/research.css": ("research.css", "text/css; charset=utf-8"),
+            "/assets/phase8.css": ("phase8.css", "text/css; charset=utf-8"),
+            "/assets/price-m5.js": ("price-m5.js", "text/javascript; charset=utf-8"),
+            "/assets/method.js": ("method.js", "text/javascript; charset=utf-8"),
             "/assets/styles.css": ("styles.css", "text/css; charset=utf-8"),
         }
         if path in static:
@@ -76,6 +94,8 @@ class FrontendHandler(BaseHTTPRequestHandler):
             allowed = backend_path in GET_ROUTES or (
                 backend_path.startswith("/demand_curve/") and
                 re.fullmatch(r"[A-Za-z0-9]+", backend_path.removeprefix("/demand_curve/"))
+            ) or (
+                re.fullmatch(r"/demo/products/[A-Za-z0-9]+(?:/(?:weeks|recommendations))?", backend_path)
             )
             if allowed:
                 self.proxy(backend_path, parsed.query)
@@ -106,7 +126,7 @@ class FrontendHandler(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     server = ThreadingHTTPServer(("127.0.0.1", 8765), FrontendHandler)
     print("Frontend: http://127.0.0.1:8765/", flush=True)
-    print("API gốc cần chạy tại http://127.0.0.1:8000/", flush=True)
+    print("API: http://127.0.0.1:8000/", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

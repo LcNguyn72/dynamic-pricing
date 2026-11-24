@@ -1,0 +1,1 @@
+"""Shop-facing HTTP services."""

@@ -53,9 +53,19 @@ def products(model_version):
         cursor.execute("""SELECT p.sku, p.description, p.tier, p.weeks, p.n_levels,
             p.price_median, p.price_min, p.price_max, p.qty_mean,
             s.p_ref AS reference_price, s.eps_mean AS elasticity_mean,
-            s.eps_sd AS elasticity_sd
+            s.eps_sd AS elasticity_sd, s.n_train_weeks,
+            sales.first_week, sales.last_week, sales.total_units,
+            sales.revenue_estimated, latest.price AS latest_weekly_price
             FROM dbo.Products AS p INNER JOIN dbo.ProductModelStats AS s
             ON s.sku=p.sku AND s.model_version=?
+            LEFT JOIN (
+                SELECT sku, MIN(week_start) AS first_week, MAX(week_start) AS last_week,
+                    SUM(qty) AS total_units,
+                    CAST(SUM(CAST(qty AS DECIMAL(18, 4)) * price) AS DECIMAL(18, 2)) AS revenue_estimated
+                FROM dbo.WeeklySales GROUP BY sku
+            ) AS sales ON sales.sku=p.sku
+            OUTER APPLY (SELECT TOP (1) w.price FROM dbo.WeeklySales AS w
+                WHERE w.sku=p.sku ORDER BY w.week_start DESC) AS latest
             WHERE p.is_selected=1
             ORDER BY CASE p.tier WHEN N're' THEN 1 WHEN N'vua_thap' THEN 2
                 WHEN N'vua_cao' THEN 3 WHEN N'dat' THEN 4 ELSE 5 END,
@@ -66,27 +76,15 @@ def products(model_version):
 
 
 def product(sku, model_version):
-    connection = connect()
-    try:
-        cursor = connection.cursor()
-        cursor.execute("""SELECT p.sku, p.description, p.tier, p.weeks, p.n_levels,
-            p.price_median, p.price_min, p.price_max, p.qty_mean,
-            s.p_ref AS reference_price, s.eps_mean AS elasticity_mean,
-            s.eps_sd AS elasticity_sd, s.n_train_weeks
-            FROM dbo.Products AS p INNER JOIN dbo.ProductModelStats AS s
-            ON s.sku=p.sku AND s.model_version=?
-            WHERE p.sku=? AND p.is_selected=1""", model_version, sku)
-        found = _rows(cursor)
-        return found[0] if found else None
-    finally:
-        connection.close()
+    return next((item for item in products(model_version) if item["sku"] == sku), None)
 
 
 def weekly_sales(sku):
     connection = connect()
     try:
         cursor = connection.cursor()
-        cursor.execute("""SELECT w.week_start AS week, w.qty, w.price, w.qty_all
+        cursor.execute("""SELECT w.week_start AS week, w.qty, w.price, w.qty_all,
+            CAST(CAST(w.qty AS DECIMAL(18, 4)) * w.price AS DECIMAL(18, 2)) AS revenue_estimated
             FROM dbo.WeeklySales AS w INNER JOIN dbo.Products AS p ON p.sku=w.sku
             WHERE w.sku=? AND p.is_selected=1 ORDER BY w.week_start""", sku)
         return _rows(cursor)
@@ -134,19 +132,22 @@ def save_recommendation(result, price_source, max_change):
         connection.close()
 
 
-def recommendations(limit=20):
+def recommendations(limit=20, sku=None):
     limit = max(1, min(int(limit), 100))
     connection = connect()
     try:
         cursor = connection.cursor()
-        cursor.execute(f"""SELECT TOP ({limit}) r.recommendation_id, r.created_at,
+        query = f"""SELECT TOP ({limit}) r.recommendation_id, r.created_at,
             r.sku, p.description, r.scenario_date, r.current_price, r.price_source,
             r.recommended_price, r.action, r.prob_gain, r.expected_gain_pct,
             r.revenue_current, r.revenue_recommended
             FROM dbo.RecommendationHistory AS r
             INNER JOIN dbo.Products AS p ON p.sku=r.sku
-            WHERE p.is_selected=1
-            ORDER BY r.recommendation_id DESC""")
+            WHERE p.is_selected=1"""
+        if sku is not None:
+            query += " AND r.sku=?"
+        query += " ORDER BY r.recommendation_id DESC"
+        cursor.execute(query, sku) if sku is not None else cursor.execute(query)
         return _rows(cursor)
     finally:
         connection.close()

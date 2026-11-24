@@ -28,12 +28,5 @@ data/
 # Generated models and processed data
 models_2y/
 
-# Python cache
-__pycache__/
-*.py[cod]
-*.pyo
+# Generated research datasets, checkpoints, and benchmark results
 
-# Virtual environment
-.venv/
-venv/
-env/

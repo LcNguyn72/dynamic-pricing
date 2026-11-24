@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0d2c35">
+  <title>Lịch sử giá và doanh thu | Pricing Lab</title>
+  <meta name="description" content="Chi tiết giá bán theo tuần, doanh thu quy đổi và các lần thử giá cho một sản phẩm demo.">
+  <link rel="stylesheet" href="/assets/styles.css">
+  <script src="/assets/browse.js" defer></script>
+</head>
+<body data-page="product">
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Điều hướng">
+      <a class="brand" href="/" aria-label="Về tổng quan"><span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span><strong>PRICING<span class="brand-dot">.</span>LAB</strong></a>
+      <nav class="side-nav">
+        <a class="nav-link" href="/"><span class="nav-icon">◫</span> Tổng quan</a>
+        <a class="nav-link active" href="/products.html"><span class="nav-icon">≡</span> Danh sách sản phẩm</a>
+        <a class="nav-link" href="/#simulator"><span class="nav-icon">◇</span> Mô phỏng giá</a>
+        <a class="nav-link" href="/research.html"><span class="nav-icon">▤</span> Thí nghiệm mô hình</a>
+        <a class="nav-link" href="/price-m5.html"><span class="nav-icon">◇</span> Đề xuất giá M5</a>
+        <a class="nav-link" href="/method.html"><span class="nav-icon">◎</span> Phương pháp</a>
+      </nav>
+      <div class="sidebar-foot"><div class="status-dot"><i></i> <span id="api-status">Đang kết nối…</span></div></div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar"><div class="topbar-title"><span class="mobile-brand">PRICING<span>.</span>LAB</span><span class="breadcrumb">Sản phẩm / <span id="breadcrumb-sku">Chi tiết</span></span></div><div class="topbar-right"><span class="top-pill">Dữ liệu 2009–2011</span></div></header>
+      <nav class="mobile-nav" aria-label="Điều hướng trên điện thoại"><a href="/">Tổng quan</a><a href="/products.html">Sản phẩm</a><a id="mobile-try" href="/#simulator">Thử giá</a><a href="/research.html">Thí nghiệm</a><a href="/price-m5.html">Giá M5</a><a href="/method.html">Phương pháp</a></nav>
+
+      <div class="page-wrap browse-page">
+        <div id="detail-state" class="panel detail-state" role="status" aria-live="polite">Đang tải thông tin sản phẩm…</div>
+        <div id="detail-content" hidden>
+          <header class="browse-header detail-header"><div><a class="back-link" href="/products.html">← Danh sách sản phẩm</a><div class="detail-title-line"><h1 id="detail-title">—</h1><span id="detail-tier" class="tier-tag"></span></div><p>SKU <span id="detail-sku">—</span> · <span id="detail-period">—</span></p></div><a id="try-product" class="primary-link" href="/#simulator">Thử giá sản phẩm</a></header>
+
+          <section class="browse-summary detail-summary" aria-label="Chỉ số sản phẩm"><div><span>Giá tuần cuối</span><strong id="detail-latest-price">—</strong></div><div><span>Tuần có bán</span><strong id="detail-weeks">—</strong></div><div><span>Lượng bán sau lọc</span><strong id="detail-units">—</strong></div><div><span>Doanh thu quy đổi*</span><strong id="detail-revenue">—</strong></div></section>
+
+          <section class="panel product-facts" aria-label="Thông tin sản phẩm"><div><span>Giá trung vị lịch sử</span><strong id="fact-median">—</strong></div><div><span>Khoảng giá lịch sử</span><strong id="fact-range">—</strong></div><div><span>Giá tham chiếu mô hình</span><strong id="fact-reference">—</strong></div><div><span>Mức giá đã quan sát</span><strong id="fact-levels">—</strong></div><div><span>Độ co giãn ước lượng</span><strong id="fact-elasticity">—</strong></div></section>
+
+          <div class="section-heading history-heading" id="weekly"><div><h2>Giá bán và doanh thu theo tuần</h2><p>Giá trung vị và lượng bán sau bước làm sạch dữ liệu.</p></div><label class="sort-field" for="history-year">Năm <select id="history-year"><option value="all">Toàn bộ</option><option value="2009">2009</option><option value="2010">2010</option><option value="2011">2011</option></select></label></div>
+          <section class="history-charts" aria-label="Biểu đồ lịch sử"><article class="panel history-chart-panel"><div class="chart-top"><h3>Giá bán trung vị</h3><span id="price-chart-range" class="chart-period">—</span></div><div id="price-history-chart" class="history-chart" role="img" aria-label="Biểu đồ giá bán theo tuần"></div><div class="chart-axis"><span id="price-chart-first">—</span><span id="price-chart-last">—</span></div></article><article class="panel history-chart-panel"><div class="chart-top"><h3>Doanh thu quy đổi*</h3><span id="revenue-chart-range" class="chart-period">—</span></div><div id="revenue-history-chart" class="history-chart" role="img" aria-label="Biểu đồ doanh thu quy đổi theo tuần"></div><div class="chart-axis"><span id="revenue-chart-first">—</span><span id="revenue-chart-last">—</span></div></article></section>
+
+          <div class="section-heading weekly-heading"><h2>Dữ liệu từng tuần</h2><span id="weekly-count" class="section-note">—</span></div>
+          <section class="panel history-table-panel" aria-label="Dữ liệu bán hàng từng tuần"><div class="table-wrap history-table-wrap"><table class="weekly-table"><thead><tr><th scope="col">Tuần bắt đầu</th><th class="numeric" scope="col">Giá trung vị</th><th class="numeric" scope="col">Đổi từ lần bán trước</th><th class="numeric" scope="col">Lượng bán sau lọc</th><th class="numeric" scope="col">Doanh thu quy đổi*</th></tr></thead><tbody id="weekly-table"></tbody></table></div><button type="button" id="weekly-more" class="more-button" hidden>Hiển thị thêm 20 tuần</button></section>
+          <p class="data-note">*Doanh thu quy đổi = lượng bán sau lọc × giá trung vị tuần. Đây là chỉ số ước tính từ dữ liệu gộp, không phải tổng tiền trên hóa đơn.</p>
+
+          <div class="section-heading activity-heading" id="activity"><div><h2>Nhật ký thao tác định giá</h2><p>Mỗi lần bấm “Tính giá đề xuất” được lưu cùng giá đã nhập và kết quả mô hình.</p></div><span id="activity-count" class="section-note">—</span></div>
+          <section class="panel activity-panel" aria-label="Các lần thử giá của sản phẩm"><div id="activity-state" class="ranking-state" role="status" aria-live="polite">Đang tải nhật ký…</div><div id="activity-wrap" class="table-wrap" hidden><table class="activity-table"><thead><tr><th scope="col">Thời điểm lưu</th><th scope="col">Ngày mô phỏng</th><th class="numeric" scope="col">Giá nhập</th><th class="numeric" scope="col">Giá đề xuất</th><th class="numeric" scope="col">Dự báo ở giá nhập</th><th class="numeric" scope="col">Dự báo ở giá đề xuất</th><th class="numeric" scope="col">Tăng dự kiến</th></tr></thead><tbody id="activity-table"></tbody></table></div></section>
+          <p class="data-note">Nhật ký ghi các lần thử giá trên hệ thống. Giá đề xuất chưa phải giá bán đã áp dụng.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

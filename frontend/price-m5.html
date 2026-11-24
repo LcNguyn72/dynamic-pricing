@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0c2731">
+  <title>Đề xuất giá M5 | Pricing Lab</title>
+  <meta name="description" content="Tính giá M5 và so sánh trực tiếp 7 phương pháp trên cùng sản phẩm, tuần và giá hiện tại.">
+  <link rel="stylesheet" href="/assets/styles.css">
+  <link rel="stylesheet" href="/assets/phase8.css">
+  <script src="/assets/price-m5.js" defer></script>
+</head>
+<body data-page="m5-price">
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Điều hướng">
+      <a class="brand" href="/" aria-label="Về tổng quan"><span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span><strong>PRICING<span class="brand-dot">.</span>LAB</strong></a>
+      <nav class="side-nav">
+        <a class="nav-link" href="/"><span class="nav-icon">◫</span> Tổng quan</a>
+        <a class="nav-link" href="/products.html"><span class="nav-icon">≡</span> Sản phẩm demo</a>
+        <a class="nav-link" href="/research.html"><span class="nav-icon">▤</span> Thí nghiệm</a>
+        <a class="nav-link active" href="/price-m5.html" aria-current="page"><span class="nav-icon">◇</span> Đề xuất giá M5</a>
+        <a class="nav-link" href="/method.html"><span class="nav-icon">◎</span> Phương pháp</a>
+      </nav>
+      <div class="sidebar-foot"><div class="status-dot"><i></i> <span id="api-status">Đang kết nối…</span></div></div>
+    </aside>
+    <main class="main-content">
+      <header class="topbar"><div class="topbar-title"><span class="mobile-brand">PRICING<span>.</span>LAB</span><span class="breadcrumb">Đề xuất giá M5</span></div><div class="topbar-right"><span class="top-pill">Pilot CA_1</span></div></header>
+      <nav class="mobile-nav" aria-label="Điều hướng trên điện thoại"><a href="/">Tổng quan</a><a href="/products.html">Sản phẩm</a><a href="/research.html">Thí nghiệm</a><a href="/price-m5.html" aria-current="page">Giá M5</a><a href="/method.html">Phương pháp</a></nav>
+
+      <div class="page-wrap m5-page">
+        <header class="m5-heading"><div><h1>Chọn giá cho một tuần M5</h1><p>Giá đề xuất và 7 phương pháp được tính trên cùng một kịch bản.</p></div><a href="/method.html" class="m5-heading-link">Phương pháp và kiểm định</a></header>
+        <div class="m5-scope" id="price-scope">Đang đọc các tuần có thể thử…</div>
+        <div id="price-loading" class="m5-message" role="status" aria-live="polite">Đang kết nối API M5…</div>
+
+        <div id="price-content" hidden>
+          <div class="m5-workbench">
+            <form class="panel m5-form" id="price-form">
+              <h2>Thiết lập quyết định</h2>
+              <div class="m5-form-grid">
+              <div class="m5-field"><label for="price-sku">Sản phẩm M5</label><select id="price-sku" required></select></div>
+              <div class="m5-field"><label for="price-week">Tuần kiểm thử</label><select id="price-week" required></select></div>
+              <div class="m5-field"><label for="price-current">Giá hiện tại · USD/đơn vị</label><input id="price-current" type="number" min="0.01" step="any" inputmode="decimal" placeholder="Dùng giá tuần trước"><small id="price-reference-note">—</small></div>
+              <div class="m5-field"><label for="price-method">Cách chọn giá</label><select id="price-method"><option value="validation_rule">Theo kết quả validation của sản phẩm</option></select><small id="price-method-note">—</small></div>
+              <div class="m5-field" id="price-seed-field" hidden><label for="price-seed">Lượt huấn luyện</label><select id="price-seed"></select></div>
+              </div>
+              <div class="m5-form-actions"><button class="m5-primary" type="submit" id="price-submit">Tính giá đề xuất</button><p class="m5-form-foot">Mục tiêu: doanh thu dự báo · Giá thử không được lưu hoặc áp dụng.</p></div>
+            </form>
+
+            <div class="m5-output" aria-live="polite">
+              <div id="price-empty" class="panel m5-empty"><strong>Chọn sản phẩm và tính giá</strong><p>Kết quả sẽ xuất hiện cùng bảng so sánh.</p></div>
+              <div id="price-result" hidden>
+                <section class="m5-decision" aria-labelledby="decision-title">
+                  <div class="m5-decision-top"><span id="decision-method">—</span><span class="m5-study-tag">Thí nghiệm M5</span></div>
+                  <h2 id="decision-title">Giá cho tuần đã chọn</h2>
+                  <div class="m5-prices"><div><span>Giá hiện tại</span><strong id="decision-current">—</strong></div><span class="m5-price-arrow" aria-hidden="true">→</span><div><span>Giá đề xuất</span><strong id="decision-price">—</strong></div></div>
+                  <div class="m5-decision-bottom"><strong id="decision-change">—</strong><span id="decision-week">—</span></div>
+                </section>
+                <div class="panel m5-decision-note"><span id="decision-rule">—</span><a href="/method.html">Xem kiểm định ↗</a></div>
+              </div>
+            </div>
+          </div>
+
+          <section id="price-comparison" class="panel m5-comparison" aria-labelledby="comparison-title" hidden>
+            <div class="m5-comparison-head"><div><span class="m5-kicker">CÙNG MỘT KỊCH BẢN</span><h2 id="comparison-title">So sánh 7 phương pháp</h2></div><span id="comparison-context">—</span></div>
+            <p class="m5-swipe-hint">Vuốt ngang để xem đủ chỉ số →</p>
+            <div class="m5-table-scroll"><table class="m5-table m5-compare-table"><thead><tr><th>Phương pháp</th><th>Giá đề xuất</th><th>Doanh thu dự báo</th><th>Doanh thu mô phỏng</th><th>Validation</th></tr></thead><tbody id="comparison-rows"></tbody></table></div>
+            <p id="comparison-note" class="m5-table-note">Doanh thu ở giá chưa bán là dự báo hoặc mô phỏng, chưa được quan sát.</p>
+          </section>
+
+          <details id="price-details" class="panel m5-extra" hidden>
+            <summary>Đồ thị giá và lịch sử 12 tuần <span aria-hidden="true">⌄</span></summary>
+            <div class="m5-extra-content">
+              <section class="m5-curve-panel" aria-labelledby="curve-title"><div class="m5-panel-head"><div><h2 id="curve-title">Doanh thu theo giá thử</h2><p>Miền giá train và tối đa ±10% từ giá hiện tại.</p></div><span id="curve-range">—</span></div><div class="m5-legend"><span><i class="m5-legend-forecast"></i> Dự báo Transformer</span><span><i class="m5-legend-sim"></i> Simulator</span><span><i class="m5-legend-current"></i> Giá hiện tại</span><span><i class="m5-legend-choice"></i> Giá đề xuất</span></div><div id="price-chart" class="m5-chart" role="img" aria-label="Đường doanh thu dự báo và doanh thu mô phỏng theo giá"></div><p id="curve-caption" class="m5-chart-caption">—</p></section>
+              <section class="m5-history-panel" aria-labelledby="history-title"><div class="m5-panel-head"><h2 id="history-title">Lịch sử trước tuần chọn</h2><span id="history-context">—</span></div><div class="m5-table-scroll"><table class="m5-table"><thead><tr><th>Trước tuần chọn</th><th>Giá</th><th>Lượng bán</th></tr></thead><tbody id="history-rows"></tbody></table></div></section>
+            </div>
+          </details>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

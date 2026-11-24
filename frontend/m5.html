@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#102d49">
+  <title>Điều hành cửa hàng | M5</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/m5-assets/m5.css">
+  <script src="/m5-assets/m5.js" type="module"></script>
+</head>
+<body>
+  <header class="masthead">
+    <div class="masthead-inner">
+      <a class="brand" href="#overview"><span class="brand-mark" aria-hidden="true">M5</span> Điều hành cửa hàng</a>
+      <nav aria-label="Điều hướng chính">
+        <a href="#overview">Tổng quan</a>
+        <a href="#products">Sản phẩm</a>
+        <a href="#statistics">Thống kê</a>
+        <a href="#pricing">Định giá</a>
+      </nav>
+      <label class="store-field" for="store">Cửa hàng <select id="store" disabled><option>Đang tải…</option></select></label>
+    </div>
+  </header>
+
+  <main id="workspace" class="workspace">
+    <p id="app-status" class="notice" role="status">Đang tải danh sách cửa hàng…</p>
+
+    <section id="view-overview" class="view" aria-labelledby="overview-heading">
+      <div class="overview-hero">
+        <div class="hero-copy">
+          <p id="overview-period">Dữ liệu bán hàng M5</p>
+          <h1 id="overview-heading" tabindex="-1">Tổng quan cửa hàng</h1>
+          <p>Tra cứu lịch sử bán hàng và thử mức giá cho tuần tiếp theo.</p>
+          <a class="button button-amber" href="#pricing">Thử định giá</a>
+        </div>
+        <div class="hero-trend">
+          <span>Doanh thu theo tuần</span>
+          <strong id="overview-latest">—</strong>
+          <canvas id="overview-chart" class="sparkline" role="img" aria-label="Xu hướng doanh thu theo tuần"></canvas>
+          <span id="overview-week"></span>
+        </div>
+      </div>
+      <div class="totals" aria-label="Kết quả bán hàng trong dữ liệu M5">
+        <div><span>Doanh thu lịch sử</span><strong id="overview-revenue">—</strong></div>
+        <div><span>Tổng lượng bán</span><strong id="overview-qty">—</strong></div>
+        <div><span>Sản phẩm</span><strong id="overview-count">—</strong></div>
+      </div>
+      <section class="panel" aria-labelledby="recent-heading">
+        <div class="panel-heading">
+          <h2 id="recent-heading">Các tuần gần nhất</h2>
+          <a class="text-link" href="#statistics">Xem thống kê</a>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th scope="col">Tuần bắt đầu</th><th scope="col">Lượng bán</th><th scope="col">Doanh thu</th></tr></thead>
+            <tbody id="overview-weeks"></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <section id="view-products" class="view" aria-labelledby="products-heading" hidden>
+      <div class="page-heading">
+        <h1 id="products-heading" tabindex="-1">Sản phẩm</h1>
+        <p>Giá bán và lượng bán theo tuần tại cửa hàng đã chọn.</p>
+      </div>
+      <section class="panel" aria-label="Danh sách sản phẩm">
+        <div class="panel-heading search-bar">
+          <form id="product-search-form" role="search">
+            <label class="visually-hidden" for="product-search">Tìm sản phẩm</label>
+            <input id="product-search" type="search" maxlength="32" placeholder="Tìm mã SKU hoặc nhóm hàng">
+            <button class="button button-outline" type="submit">Tìm kiếm</button>
+          </form>
+          <span id="product-count" class="quiet" aria-live="polite"></span>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th scope="col">Mã sản phẩm</th><th scope="col">Nhóm hàng</th><th scope="col">Giá gần nhất</th><th scope="col">Thao tác</th></tr></thead>
+            <tbody id="product-list"></tbody>
+          </table>
+        </div>
+        <div class="pagination">
+          <button id="products-previous" class="button button-outline" type="button" disabled>Trang trước</button>
+          <button id="products-next" class="button button-outline" type="button" disabled>Trang sau</button>
+        </div>
+      </section>
+      <section id="product-detail" class="panel detail" aria-labelledby="detail-heading" hidden>
+        <div class="panel-heading">
+          <div><h2 id="detail-heading" tabindex="-1"></h2><p id="detail-description" class="quiet"></p></div>
+          <a id="detail-pricing" class="button button-primary" href="#pricing">Định giá sản phẩm</a>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th scope="col">Tuần bắt đầu</th><th scope="col">Giá bán</th><th scope="col">Lượng bán</th><th scope="col">Doanh thu</th></tr></thead>
+            <tbody id="product-weeks"></tbody>
+          </table>
+        </div>
+        <div id="history-pagination" class="pagination" hidden>
+          <button id="load-older-weeks" class="button button-outline" type="button">Xem các tuần trước</button>
+        </div>
+        <p id="product-history-status" class="notice" role="status" hidden></p>
+      </section>
+    </section>
+
+    <section id="view-statistics" class="view" aria-labelledby="statistics-heading" hidden>
+      <div class="page-heading">
+        <h1 id="statistics-heading" tabindex="-1">Thống kê bán hàng</h1>
+        <p id="stats-period">Số liệu lịch sử của cửa hàng.</p>
+      </div>
+      <div class="totals">
+        <div><span>Doanh thu lịch sử</span><strong id="stats-revenue">—</strong></div>
+        <div><span>Tổng lượng bán</span><strong id="stats-qty">—</strong></div>
+        <div><span>Sản phẩm</span><strong id="stats-count">—</strong></div>
+      </div>
+      <section class="panel" aria-labelledby="trend-heading">
+        <div class="panel-heading trend-controls">
+          <div><h2 id="trend-heading">Xu hướng theo tuần</h2><p class="quiet">26 tuần gần nhất</p></div>
+          <label class="visually-hidden" for="metric">Chọn chỉ số</label>
+          <select id="metric"><option value="revenue">Doanh thu</option><option value="qty">Lượng bán</option></select>
+        </div>
+        <div class="trend">
+          <canvas id="stats-chart" class="trend-chart" role="img" aria-label="Xu hướng bán hàng theo tuần"></canvas>
+          <div class="trend-labels"><span id="trend-start"></span><span id="trend-end"></span></div>
+        </div>
+      </section>
+      <section class="panel detail" aria-labelledby="stats-history-heading">
+        <div class="panel-heading"><h2 id="stats-history-heading">Số liệu theo tuần</h2></div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th scope="col">Tuần bắt đầu</th><th scope="col">Lượng bán</th><th scope="col">Doanh thu</th></tr></thead>
+            <tbody id="stats-weeks"></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <section id="view-pricing" class="view" aria-labelledby="pricing-heading" hidden>
+      <div class="page-heading">
+        <h1 id="pricing-heading" tabindex="-1">Định giá theo tuần</h1>
+        <p>So sánh giá đề xuất dựa trên lượng bán dự báo từ ARIMAX.</p>
+      </div>
+      <div class="pricing-layout">
+        <form id="pricing-form" class="panel workflow">
+          <div class="panel-heading"><h2>Thông tin định giá</h2></div>
+          <div class="fields">
+            <label for="pricing-sku">Mã sản phẩm
+              <input id="pricing-sku" name="sku" list="pricing-skus" required maxlength="32" placeholder="Ví dụ FOODS_3_090" autocomplete="off">
+              <datalist id="pricing-skus"></datalist>
+            </label>
+            <label for="pricing-week">Tuần dự báo
+              <input id="pricing-week" name="week" type="date" required aria-describedby="pricing-date-note">
+              <small id="pricing-date-note">Chọn ngày thứ Hai đầu tuần.</small>
+            </label>
+            <label for="pricing-current">Giá hiện tại (USD)
+              <input id="pricing-current" name="current_price" type="number" min="0.0001" max="1000000" step="any" placeholder="Dùng giá tuần trước">
+            </label>
+            <label for="strategy">Phương pháp
+              <select id="strategy" name="strategy" aria-describedby="policy-status">
+                <option value="grid">Lưới giá</option>
+                <option value="ppo_feedback" disabled>PPO có phản hồi</option>
+                <option value="compare" disabled>So sánh cả hai</option>
+              </select>
+            </label>
+            <p id="policy-status" class="quiet" role="status"></p>
+            <button id="calculate" class="button button-primary" type="submit" disabled>Tính giá đề xuất</button>
+          </div>
+        </form>
+        <article class="panel pricing-result" aria-labelledby="recommendation-heading" aria-live="polite">
+          <div class="panel-heading">
+            <h2 id="recommendation-heading">Kết quả dự báo</h2>
+            <span id="comparison-context" class="quiet"></span>
+          </div>
+          <p id="pricing-status" class="empty-result" role="status">Chọn sản phẩm và tuần để tính giá.</p>
+          <div id="comparison" class="table-scroll" hidden>
+            <table class="comparison-table">
+              <thead id="comparison-head"></thead>
+              <tbody id="comparison-body"></tbody>
+            </table>
+          </div>
+          <p id="comparison-summary" class="comparison-summary" hidden></p>
+          <details id="pricing-candidates" hidden>
+            <summary>Mức giá trên lưới</summary>
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th scope="col">Giá</th><th scope="col">Lượng bán dự báo</th><th scope="col">Doanh thu dự kiến</th></tr></thead>
+                <tbody id="candidate-list"></tbody>
+              </table>
+            </div>
+          </details>
+        </article>
+      </div>
+      <section class="panel feedback" aria-labelledby="feedback-heading">
+        <div class="panel-heading">
+          <div><h2 id="feedback-heading">Ghi nhận kết quả bán hàng</h2><p id="feedback-context" class="quiet">Chọn mã sản phẩm ở phần định giá.</p></div>
+        </div>
+        <form id="feedback-form">
+          <label for="feedback-source">Nguồn số liệu
+            <select id="feedback-source"><option value="m5_history">Lịch sử M5</option><option value="manual">Nhập kết quả thực tế</option></select>
+          </label>
+          <label for="feedback-week">Tuần đã bán<input id="feedback-week" type="date" required aria-describedby="feedback-week-note"><small id="feedback-week-note">Chọn ngày thứ Hai đầu tuần.</small></label>
+          <label for="feedback-price" data-manual-feedback hidden>Giá đã áp dụng (USD)<input id="feedback-price" type="number" min="0.0001" max="1000000" step="any" required disabled></label>
+          <label for="feedback-qty" data-manual-feedback hidden>Lượng bán thực tế<input id="feedback-qty" type="number" min="0" max="2147483647" step="1" required disabled></label>
+          <button id="save-feedback" class="button button-outline" type="submit" disabled>Lưu phản hồi</button>
+        </form>
+        <p id="feedback-status" class="notice" role="status" hidden></p>
+      </section>
+    </section>
+  </main>
+</body>
+</html>

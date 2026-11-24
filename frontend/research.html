@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10213a">
+  <title>Thí nghiệm mô hình | Pricing Lab</title>
+  <meta name="description" content="Xem dự báo nhu cầu, phát lại chính sách giá và thử một quyết định PPO trên dữ liệu M5.">
+  <link rel="stylesheet" href="/assets/styles.css">
+  <link rel="stylesheet" href="/assets/research.css">
+  <script src="/assets/research.js" defer></script>
+</head>
+<body data-page="research">
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Điều hướng">
+      <a class="brand" href="/" aria-label="Về tổng quan"><span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span><strong>PRICING<span class="brand-dot">.</span>LAB</strong></a>
+      <nav class="side-nav">
+        <a class="nav-link" href="/"><span class="nav-icon">◫</span> Tổng quan</a>
+        <a class="nav-link" href="/products.html"><span class="nav-icon">≡</span> Danh sách sản phẩm</a>
+        <a class="nav-link" href="/#simulator"><span class="nav-icon">◇</span> Mô phỏng giá</a>
+        <a class="nav-link active" href="/research.html" aria-current="page"><span class="nav-icon">▤</span> Thí nghiệm mô hình</a>
+        <a class="nav-link" href="/price-m5.html"><span class="nav-icon">◇</span> Đề xuất giá M5</a>
+        <a class="nav-link" href="/method.html"><span class="nav-icon">◎</span> Phương pháp</a>
+      </nav>
+      <div class="sidebar-foot"><div class="status-dot"><i></i> <span id="api-status">Đang kết nối…</span></div></div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="topbar-title"><span class="mobile-brand">PRICING<span>.</span>LAB</span><span class="breadcrumb">Thí nghiệm mô hình</span></div>
+        <div class="topbar-right"><span class="top-pill">Kết quả đã lưu</span></div>
+      </header>
+      <nav class="mobile-nav" aria-label="Điều hướng trên điện thoại"><a href="/">Tổng quan</a><a href="/products.html">Sản phẩm</a><a href="/#simulator">Thử giá</a><a href="/research.html" aria-current="page">Thí nghiệm</a><a href="/price-m5.html">Giá M5</a><a href="/method.html">Phương pháp</a></nav>
+
+      <div class="page-wrap research-page">
+        <header class="research-header">
+          <div>
+            <h1>Từ dự báo đến quyết định giá</h1>
+            <p>Đối chiếu kết quả đã lưu, rồi thử một mức giá trên tuần test M5.</p>
+          </div>
+          <div class="research-switch" role="tablist" aria-label="Nội dung thí nghiệm">
+            <button type="button" id="forecast-tab" role="tab" aria-controls="forecast-view" aria-selected="true">Dự báo nhu cầu</button>
+            <button type="button" id="pricing-tab" role="tab" aria-controls="pricing-view" aria-selected="false">Chính sách giá</button>
+            <button type="button" id="scenario-tab" role="tab" aria-controls="scenario-view" aria-selected="false">Thử giá M5</button>
+          </div>
+        </header>
+
+        <section id="forecast-view" role="tabpanel" aria-labelledby="forecast-tab">
+          <div class="research-controls panel">
+            <div class="research-field"><label for="forecast-dataset">Bộ dữ liệu</label><select id="forecast-dataset"><option value="uci">UCI Online Retail · 100 SKU</option><option value="m5">M5 · 20 chuỗi CA_1</option></select></div>
+            <div class="research-context"><strong id="forecast-test-count">—</strong><span id="forecast-source">Đang đọc kết quả…</span></div>
+          </div>
+          <div id="forecast-status" class="research-status" role="status" aria-live="polite">Đang tải bảng dự báo…</div>
+          <div id="forecast-content" hidden>
+            <div class="research-two-column">
+              <section class="panel research-panel" aria-labelledby="ranking-title">
+                <div class="research-panel-head"><div><h2 id="ranking-title">Sai số dự báo</h2><p>RMSE càng thấp càng tốt · sản phẩm/tuần</p></div><span id="ranking-meta" class="research-count">—</span></div>
+                <div id="model-list" class="model-list" aria-label="Chọn mô hình dự báo"></div>
+                <div class="research-panel-foot">Trung bình ± độ lệch chuẩn theo seed. ARIMA chạy một lần vì kết quả xác định.</div>
+              </section>
+
+              <section class="panel research-panel" aria-labelledby="forecast-chart-title">
+                <div class="research-panel-head"><div><h2 id="forecast-chart-title">Cùng sản phẩm, cùng tuần</h2><p>Đường đậm là lượng bán quan sát được.</p></div></div>
+                <div class="research-filter-grid">
+                  <div class="research-field"><label for="forecast-sku">Sản phẩm</label><select id="forecast-sku"></select></div>
+                  <div class="research-field"><label for="forecast-seed">Seed</label><select id="forecast-seed"></select></div>
+                  <div class="research-field"><label for="forecast-compare">So với</label><select id="forecast-compare"></select></div>
+                </div>
+                <div class="research-selection"><span id="forecast-primary-name">—</span><span id="forecast-primary-rmse">—</span></div>
+                <div class="research-legend"><span><i class="legend-observed"></i> Thực tế</span><span><i class="legend-primary"></i> Mô hình đã chọn</span><span><i class="legend-compare"></i> Mô hình đối chiếu</span></div>
+                <div id="forecast-chart" class="research-chart" role="img" aria-label="Đồ thị lượng bán thực tế và dự báo theo tuần"></div>
+                <div id="forecast-range" class="research-chart-range"></div>
+                <div class="research-table-wrap"><table class="research-table"><thead><tr><th>Tuần</th><th>Giá quan sát</th><th>Lượng bán</th><th id="forecast-th-primary">Mô hình</th><th id="forecast-th-compare">Đối chiếu</th></tr></thead><tbody id="forecast-table"></tbody></table></div>
+              </section>
+            </div>
+            <section class="panel research-note-panel" aria-labelledby="price-effect-title"><h2 id="price-effect-title">Thêm giá vào mô hình có giúp không?</h2><div id="price-effects" class="price-effects"></div></section>
+          </div>
+        </section>
+
+        <section id="pricing-view" role="tabpanel" aria-labelledby="pricing-tab" hidden>
+          <div class="research-controls panel">
+            <div class="research-field"><label for="pricing-simulator">Simulator</label><select id="pricing-simulator"><option value="lag_adjusted_kernel">Kernel hiệu chỉnh</option><option value="song_kernel">Kernel gốc</option></select></div>
+            <div class="research-context"><strong>200 quyết định test</strong><span>10 sản phẩm × 20 tuần · 5 seed</span></div>
+          </div>
+          <div id="pricing-status" class="research-status" role="status" aria-live="polite">Đang tải kết quả định giá…</div>
+          <div id="pricing-content" hidden>
+            <div class="research-evidence" id="simulator-evidence"></div>
+            <div class="research-two-column pricing-layout">
+              <section class="panel research-panel" aria-labelledby="policy-title">
+                <div class="research-panel-head"><div><h2 id="policy-title">Chính sách đã chạy</h2><p>So với giá cố định trong cùng simulator và seed.</p></div></div>
+                <div id="policy-list" class="policy-list" aria-label="Chọn chính sách định giá"></div>
+                <div class="research-panel-foot">Kernel grid đọc trực tiếp công thức cầu mô phỏng; chỉ dùng làm mốc chẩn đoán.</div>
+              </section>
+
+              <section class="panel research-panel replay-panel" aria-labelledby="replay-title">
+                <div class="research-panel-head"><div><h2 id="replay-title">Phát lại quyết định giá</h2><p id="replay-subtitle">Giá và lượng bán đều là kết quả mô phỏng.</p></div></div>
+                <div class="research-filter-grid replay-filters">
+                  <div class="research-field"><label for="pricing-sku">Sản phẩm</label><select id="pricing-sku"></select></div>
+                  <div class="research-field"><label for="pricing-seed">Seed</label><select id="pricing-seed"></select></div>
+                </div>
+                <div class="replay-totals"><div><span>Tổng doanh thu mô phỏng · 200 quyết định</span><strong id="replay-total">—</strong></div><div><span>So với giá cố định</span><strong id="replay-uplift">—</strong></div></div>
+                <div class="replay-step"><button id="replay-prev" type="button" aria-label="Tuần trước">‹</button><button id="replay-play" type="button">Phát</button><button id="replay-next" type="button" aria-label="Tuần tiếp theo">›</button><input id="replay-slider" type="range" min="0" max="19" value="0" aria-label="Chọn tuần phát lại"><span id="replay-position">—</span></div>
+                <div id="replay-chart" class="research-chart replay-chart" role="img" aria-label="Giá do chính sách chọn và giá cố định theo tuần"></div>
+                <div id="replay-week" class="replay-week"></div>
+                <div class="research-table-wrap"><table class="research-table"><thead><tr><th>Tuần</th><th>Giá chọn</th><th>Giá cố định</th><th>Lượng bán mô phỏng</th><th>Doanh thu mô phỏng</th></tr></thead><tbody id="replay-table"></tbody></table></div>
+              </section>
+            </div>
+            <p class="research-caveat">Simulator hiệu chỉnh chưa vượt dự báo tuần trước trên test; cầu ở giá chưa bán không được xác nhận. Các mức tăng trên trang này không phải doanh thu thực tế.</p>
+          </div>
+        </section>
+
+        <section id="scenario-view" role="tabpanel" aria-labelledby="scenario-tab" hidden>
+          <div id="scenario-status" class="research-status" role="status" aria-live="polite">Đang đọc các tuần test M5…</div>
+          <div id="scenario-content" class="scenario-content" hidden>
+            <div class="scenario-layout">
+              <form id="scenario-form" class="panel scenario-form">
+                <div class="scenario-form-head"><h2>Thử một tuần test</h2><p>Nếu nhập giá, hãy chọn trong miền giá của tập train.</p></div>
+                <div class="research-field"><label for="scenario-policy">Chính sách PPO</label><select id="scenario-policy" name="policy_variant" required></select></div>
+                <div class="research-field"><label for="scenario-sku">Sản phẩm M5</label><select id="scenario-sku" name="sku" required></select></div>
+                <div class="research-field"><label for="scenario-week">Tuần cần thử</label><select id="scenario-week" name="week" required></select></div>
+                <div class="research-field"><label for="scenario-price">Giá đầu vào · USD/đơn vị</label><input id="scenario-price" name="current_price" type="number" inputmode="decimal" step="any"><small id="scenario-price-range">—</small></div>
+                <div class="research-field"><label for="scenario-seed">Lượt huấn luyện PPO</label><select id="scenario-seed" name="seed" required></select></div>
+                <button id="scenario-submit" class="scenario-submit" type="submit">Tính giá bằng PPO</button>
+                <p id="scenario-form-note" class="scenario-form-note">—</p>
+              </form>
+
+              <div class="scenario-output">
+                <div id="scenario-empty" class="panel scenario-empty">Chọn sản phẩm, tuần và giá hiện tại, sau đó tính giá bằng PPO.</div>
+                <div id="scenario-result" hidden>
+                  <section class="scenario-decision" aria-labelledby="scenario-decision-title">
+                    <div class="scenario-decision-head"><h2 id="scenario-decision-title">Giá PPO chọn</h2><span id="scenario-decision-meta">—</span></div>
+                    <div class="scenario-price-pair"><div><span>Giá đầu vào</span><strong id="scenario-current-price">—</strong></div><span class="scenario-arrow" aria-hidden="true">→</span><div><span>Giá đề xuất</span><strong id="scenario-recommended-price">—</strong></div></div>
+                    <p id="scenario-price-change" class="scenario-price-change">—</p>
+                    <p id="scenario-policy-context" class="scenario-policy-context">—</p>
+                  </section>
+                  <section class="panel scenario-forecast" aria-labelledby="scenario-forecast-title">
+                    <div class="scenario-section-head"><h2 id="scenario-forecast-title">Doanh thu dự báo tại hai mức giá</h2><p>Dự báo lượng bán × giá. Đây là ước tính, không phải doanh thu đã ghi nhận.</p></div>
+                    <div class="scenario-comparison"><div><span>Giữ giá hiện tại</span><strong id="scenario-revenue-current">—</strong><small id="scenario-units-current">—</small></div><div><span>Theo PPO</span><strong id="scenario-revenue-recommended">—</strong><small id="scenario-units-recommended">—</small></div></div>
+                    <p id="scenario-revenue-change" class="scenario-result-line">—</p>
+                    <p id="scenario-simulator-summary" class="scenario-simulator-summary">—</p>
+                  </section>
+                </div>
+              </div>
+            </div>
+
+            <div id="scenario-details" class="scenario-details" hidden>
+              <section class="panel scenario-chart-panel" aria-labelledby="scenario-chart-title">
+                <div class="scenario-section-head"><h2 id="scenario-chart-title">Nếu thử các mức giá trong miền train</h2><p>Doanh thu dự báo từ Transformer và doanh thu kỳ vọng của simulator.</p></div>
+                <div class="research-legend"><span><i class="legend-primary"></i> Transformer</span><span><i class="legend-compare"></i> Simulator</span><span><i class="legend-current-marker"></i> Giá hiện tại</span><span><i class="legend-recommended-marker"></i> Giá PPO</span></div>
+                <div id="scenario-chart" class="research-chart scenario-chart" role="img" aria-label="Đường doanh thu ước tính theo các mức giá"></div>
+                <p id="scenario-chart-range" class="scenario-chart-range">—</p>
+              </section>
+              <section class="panel scenario-context" aria-labelledby="scenario-context-title">
+                <div class="scenario-section-head"><h2 id="scenario-context-title">Dữ liệu trước quyết định</h2><p id="scenario-history-note">—</p></div>
+                <div id="scenario-context-meta" class="scenario-context-meta"></div>
+                <details><summary>Xem 12 tuần lịch sử</summary><div class="research-table-wrap"><table class="research-table"><thead><tr><th>Trước tuần chọn</th><th>Giá</th><th>Lượng bán</th></tr></thead><tbody id="scenario-history"></tbody></table></div></details>
+              </section>
+            </div>
+            <p id="scenario-caveat" class="research-caveat">PPO dùng chính sách đã học, không tìm giá cực đại cho riêng tuần này. Đây là quyết định mô phỏng: cầu ở giá chưa bán chưa được kiểm chứng, và simulator hiệu chỉnh có RMSE test cao hơn mốc dự báo tuần trước.</p>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

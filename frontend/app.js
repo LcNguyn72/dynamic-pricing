@@ -1,6 +1,7 @@
 const state = {
   products: [], selectedSku: null, activeTier: 'all',
-  lastResult: null, loadToken: 0, scenarioRevision: 0
+  lastResult: null, loadToken: 0, scenarioRevision: 0,
+  rankingBySku: new Map(), rankingStatus: 'idle', rankingError: '', rankingToken: 0
 };
 
 const $ = (id) => document.getElementById(id);
@@ -27,7 +28,7 @@ async function api(path, options = {}) {
 
 async function selectedProducts() {
   const response = await fetch('/selected-products.json');
-  if (!response.ok) throw new Error('Không đọc được danh sách 20 sản phẩm của bước 3.');
+  if (!response.ok) throw new Error('Không tải được danh sách sản phẩm demo.');
   return response.json();
 }
 
@@ -55,26 +56,101 @@ function renderProductOptions() {
   ).join('');
 }
 
-function renderProductSummary(item) {
-  $('product-summary').innerHTML = `<div><strong>${escapeHtml(item.description)}</strong>
-    <span>SKU ${escapeHtml(item.sku)} · ${item.weeks} tuần có bán · ${item.n_levels} mức giá</span></div>
-    <span class="tag">${escapeHtml(labels[item.tier] || item.tier)}</span>`;
-  $('chart-product-name').textContent = `${item.description} · SKU ${item.sku}`;
+function referencePrice(item) { return Number(Number(item.reference_price).toFixed(2)); }
+
+function updatePriceSource() {
+  const item = productBySku(state.selectedSku);
+  if (!item) return;
+  const reference = referencePrice(item);
+  const usingReference = Number($('current-price').value) === reference;
+  $('price-reference').textContent = usingReference
+    ? `Điền sẵn từ giá tham chiếu mô hình: ${price.format(reference)}`
+    : `Giá tham chiếu mô hình: ${price.format(reference)}`;
+  $('reset-price').hidden = usingReference;
+}
+
+function rankingValue(result, sort) {
+  if (!result || result.error) return -Infinity;
+  if (sort === 'gain') return Number(result.confidence?.expected_gain_pct) || 0;
+  if (sort === 'probability') return Number(result.confidence?.prob_gain) || 0;
+  return Number(result.priority_score) || 0;
 }
 
 function renderCatalog() {
+  const ready = state.rankingStatus === 'ready';
+  $('ranking-table').hidden = !ready;
+  $('ranking-state').hidden = ready;
+  $('catalog-empty').hidden = true;
+  if (!ready) {
+    $('ranking-count').textContent = '';
+    $('ranking-state').innerHTML = state.rankingStatus === 'error'
+      ? `${escapeHtml(state.rankingError)} <button type="button" class="text-button" data-retry>Thử lại</button>`
+      : 'Đang tính đề xuất cho 20 sản phẩm…';
+    return;
+  }
   const query = $('product-search').value.trim().toLocaleLowerCase('vi');
-  const visible = state.products.filter((item) =>
+  const sort = $('ranking-sort').value;
+  const ranked = state.products.map((item, index) => ({ item, index,
+    result: state.rankingBySku.get(item.sku) })).sort((a, b) =>
+    rankingValue(b.result, sort) - rankingValue(a.result, sort) ||
+    rankingValue(b.result, 'priority') - rankingValue(a.result, 'priority') || a.index - b.index
+  ).map((row, index) => ({ ...row, rank: row.result?.error ? '—' : index + 1 }));
+  const visible = ranked.filter(({ item }) =>
     (state.activeTier === 'all' || item.tier === state.activeTier) &&
     (`${item.sku} ${item.description}`.toLocaleLowerCase('vi').includes(query))
   );
-  $('product-table').innerHTML = visible.map((item) => `<tr class="${item.sku === state.selectedSku ? 'selected' : ''}">
-    <td><strong title="${escapeHtml(item.description)}">${escapeHtml(item.description)}</strong><small>SKU ${escapeHtml(item.sku)}</small></td>
-    <td><span class="tier-tag ${escapeHtml(item.tier)}">${escapeHtml(labels[item.tier] || item.tier)}</span></td>
-    <td>${price.format(item.reference_price)}</td><td>${number.format(item.weeks)}</td>
-    <td>${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 2 }).format(item.elasticity_mean)}</td>
-    <td><button type="button" class="table-action" data-sku="${escapeHtml(item.sku)}" aria-label="Thử giá sản phẩm ${escapeHtml(item.description)}, SKU ${escapeHtml(item.sku)}">Thử giá →</button></td></tr>`).join('');
+  $('ranking-count').textContent = `${visible.length} / ${state.products.length} sản phẩm`;
+  $('product-table').innerHTML = visible.map(({ item, result, rank }) => {
+    const failed = !result || result.error;
+    const probability = result?.confidence?.prob_gain;
+    return `<tr class="${item.sku === state.selectedSku ? 'selected' : ''} ${rank <= 3 ? 'top-rank' : ''}">
+      <td class="rank-cell" data-label="Hạng">${rank}</td>
+      <td class="product-cell"><strong title="${escapeHtml(item.description)}">${escapeHtml(item.description)}</strong><small>SKU ${escapeHtml(item.sku)} <span class="tier-tag ${escapeHtml(item.tier)}">${escapeHtml(labels[item.tier] || item.tier)}</span></small>${failed ? `<small class="row-error" title="${escapeHtml(result?.error || '')}">Không tính được đề xuất</small>` : ''}</td>
+      <td class="numeric" data-label="Giá tham chiếu">${price.format(referencePrice(item))}</td>
+      <td class="numeric recommendation-cell" data-label="Giá đề xuất">${failed ? '—' : price.format(result.recommended_price)}</td>
+      <td class="numeric gain-cell ${!failed && result.confidence.expected_gain_pct > 0 ? 'positive' : ''}" data-label="Tăng doanh thu dự kiến">${failed ? '—' : signed(result.confidence.expected_gain_pct)}</td>
+      <td class="numeric" data-label="Xác suất tăng">${failed || probability == null ? '—' : `${Math.round(probability * 100)}%`}</td>
+      <td class="action-cell"><span class="row-actions"><button type="button" class="table-action" data-sku="${escapeHtml(item.sku)}" aria-label="Thử giá ${escapeHtml(item.description)}, SKU ${escapeHtml(item.sku)}">Thử giá</button><a class="table-action" href="/product.html?sku=${encodeURIComponent(item.sku)}" aria-label="Xem lịch sử ${escapeHtml(item.description)}, SKU ${escapeHtml(item.sku)}">Lịch sử</a></span></td>
+    </tr>`;
+  }).join('');
   $('catalog-empty').hidden = visible.length > 0;
+}
+
+async function refreshRanking() {
+  const token = ++state.rankingToken;
+  state.rankingStatus = 'loading';
+  state.rankingBySku = new Map();
+  const day = $('scenario-date').value;
+  const maxChange = Number($('max-change').value);
+  const displayDate = day ? day.split('-').reverse().join('/') : '—';
+  $('ranking-context').textContent = `Dùng giá tham chiếu của từng sản phẩm, ngày ${displayDate}, giới hạn ±${Math.round(maxChange * 100)}%.`;
+  renderCatalog();
+  if (!$('scenario-date').checkValidity()) {
+    state.rankingStatus = 'error';
+    state.rankingError = 'Chọn ngày mô phỏng hợp lệ để so sánh.';
+    renderCatalog();
+    return;
+  }
+  try {
+    const items = state.products.map((item) => ({ sku: item.sku,
+      current_price: referencePrice(item), date: day, max_change: maxChange }));
+    const payload = await api('/recommend/batch', { method: 'POST',
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items }) });
+    if (token !== state.rankingToken) return;
+    const requestedSkus = new Set(items.map((item) => item.sku));
+    if (!Array.isArray(payload.results) || payload.results.length !== items.length ||
+        new Set(payload.results.map((result) => String(result.sku))).size !== items.length ||
+        payload.results.some((result) => !requestedSkus.has(String(result.sku)))) {
+      throw new Error('API trả về danh sách so sánh không đầy đủ.');
+    }
+    state.rankingBySku = new Map(payload.results.map((result) => [String(result.sku), result]));
+    state.rankingStatus = 'ready';
+  } catch (error) {
+    if (token !== state.rankingToken) return;
+    state.rankingStatus = 'error';
+    state.rankingError = `Không tính được bảng so sánh: ${error.message}`;
+  }
+  renderCatalog();
 }
 
 function gridLines(width, left, right, top, bottom, rows = 3) {
@@ -169,21 +245,23 @@ function clearResult() {
   state.lastResult = null;
   $('result-empty').hidden = false;
   $('result-content').hidden = true;
-  $('result-badge').textContent = 'Chưa tính';
+  $('result-badge').hidden = true;
   $('result-badge').className = 'result-badge';
+  document.querySelector('.result-detail').open = false;
 }
 
-async function selectProduct(sku) {
+async function selectProduct(sku, batchResult = null) {
   const item = productBySku(sku);
   if (!item) return;
   ++state.loadToken;
   state.selectedSku = sku;
   $('product-select').value = sku;
-  $('current-price').value = Number(item.reference_price).toFixed(2);
-  $('price-source-label').textContent = 'Giá tham chiếu do API mô hình trả về';
-  renderProductSummary(item);
+  $('current-price').value = referencePrice(item).toFixed(2);
+  updatePriceSource();
+  $('chart-product-name').textContent = `${item.description} · SKU ${item.sku}`;
   renderCatalog();
   clearResult();
+  if (batchResult && !batchResult.error) renderResult(batchResult);
   $('demand-chart').textContent = 'Đang tải đường cầu…';
   $('curve-chart').textContent = 'Đang tải đường doanh thu…';
   try { await updateCurve(); } catch (error) { toast(error.message, true); }
@@ -195,6 +273,7 @@ function renderResult(result) {
   $('result-content').hidden = false;
   const action = { lower: 'Giảm giá', raise: 'Tăng giá', keep: 'Giữ nguyên' }[result.action] || result.action;
   $('result-badge').textContent = action;
+  $('result-badge').hidden = false;
   $('result-badge').className = `result-badge ${result.action}`;
   $('result-current').textContent = price.format(result.current_price);
   $('result-recommended').textContent = price.format(result.recommended_price);
@@ -216,11 +295,13 @@ function renderResult(result) {
     .replace(/mức weak/g, 'mức thận trọng')
     .replace(/10-90%:/g, 'khoảng 10–90%:')
     .replace(/ \.\. /g, ' đến ');
-  $('result-warnings').innerHTML = result.warnings.map((warning) => {
-    const message = warning.startsWith('Không có unit_cost:')
-      ? 'Không có giá vốn: chỉ tối ưu doanh thu, chưa đánh giá lợi nhuận.' : warning;
-    return `<div class="warning">${escapeHtml(message)}</div>`;
-  }).join('');
+  $('result-warnings').innerHTML = result.warnings
+    .filter((warning) => !warning.startsWith('Không có unit_cost:'))
+    .map((warning) => `<div class="warning">${escapeHtml(warning)}</div>`).join('');
+  $('saved-simulation').hidden = !result.recommendation_id;
+  if (result.recommendation_id) {
+    $('saved-simulation').href = `/product.html?sku=${encodeURIComponent(result.sku)}#activity`;
+  }
 }
 
 async function submitScenario(event) {
@@ -239,13 +320,12 @@ async function submitScenario(event) {
   button.disabled = true;
   button.firstElementChild.textContent = 'Đang tính toán…';
   try {
-    const result = await api('/recommend', {
+    const result = await api('/demo/simulations', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
     });
     if (stillCurrent()) {
       renderResult(result);
       await updateCurve();
-      toast(`Đã tính đề xuất cho SKU ${result.sku}. Kết quả chưa lưu vào SQL Server.`);
     } else {
       toast('Kịch bản đã thay đổi trong lúc tính. Hãy tính lại để xem kết quả mới.');
     }
@@ -260,26 +340,32 @@ function bindEvents() {
   $('scenario-date').addEventListener('change', () => {
     clearResult();
     updateCurve().catch((error) => toast(error.message, true));
+    refreshRanking();
   });
   $('current-price').addEventListener('input', () => {
-    $('price-source-label').textContent = 'Giá do bạn nhập';
     clearResult();
+    updatePriceSource();
   });
   $('current-price').addEventListener('change', () => updateCurve().catch((error) => toast(error.message, true)));
   $('reset-price').addEventListener('click', () => {
     const item = productBySku(state.selectedSku);
     if (!item) return;
-    $('current-price').value = Number(item.reference_price).toFixed(2);
-    $('price-source-label').textContent = 'Giá tham chiếu do API mô hình trả về';
+    $('current-price').value = referencePrice(item).toFixed(2);
+    updatePriceSource();
     clearResult();
     updateCurve().catch((error) => toast(error.message, true));
   });
   $('max-change').addEventListener('change', () => {
     clearResult();
     updateCurve().catch((error) => toast(error.message, true));
+    refreshRanking();
   });
   $('scenario-form').addEventListener('submit', submitScenario);
   $('product-search').addEventListener('input', renderCatalog);
+  $('ranking-sort').addEventListener('change', renderCatalog);
+  $('ranking-state').addEventListener('click', (event) => {
+    if (event.target.closest('[data-retry]')) refreshRanking();
+  });
   $('tier-filters').addEventListener('click', (event) => {
     const chip = event.target.closest('[data-tier]');
     if (!chip) return;
@@ -290,10 +376,10 @@ function bindEvents() {
     });
     renderCatalog();
   });
-  $('product-table').addEventListener('click', async (event) => {
-    const button = event.target.closest('[data-sku]');
+  $('product-table').addEventListener('click', (event) => {
+    const button = event.target.closest('button[data-sku]');
     if (!button) return;
-    await selectProduct(button.dataset.sku);
+    selectProduct(button.dataset.sku, state.rankingBySku.get(button.dataset.sku));
     document.querySelector('#simulator').scrollIntoView({ behavior: 'smooth' });
   });
   document.querySelectorAll('.nav-link').forEach((link) => link.addEventListener('click', () => {
@@ -304,8 +390,8 @@ function bindEvents() {
 async function initialize() {
   bindEvents();
   try {
-    const [health, model, modelProducts, selected] = await Promise.all([
-      api('/health'), api('/model_info'), api('/products'), selectedProducts()
+    const [health, modelProducts, selected] = await Promise.all([
+      api('/health'), api('/products'), selectedProducts()
     ]);
     if (health.status !== 'ok') throw new Error('API mô hình chưa sẵn sàng.');
     if (!Array.isArray(selected) || selected.length !== 20 ||
@@ -322,13 +408,14 @@ async function initialize() {
     $('scenario-date').min = '2009-11-30';
     $('scenario-date').max = '2011-12-05';
     $('scenario-date').value = '2011-11-15';
-    $('side-model-version').textContent = model.model_version;
-    $('api-status').textContent = 'API GỐC ĐÃ KẾT NỐI';
+    $('api-status').textContent = 'Đã kết nối';
     renderOverview(health);
     renderProductOptions();
-    await selectProduct(state.products[0].sku);
+    const requestedSku = new URLSearchParams(window.location.search).get('sku');
+    const initialSku = requestedSku && productBySku(requestedSku) ? requestedSku : state.products[0].sku;
+    await Promise.all([selectProduct(initialSku), refreshRanking()]);
   } catch (error) {
-    $('api-status').textContent = 'CHƯA KẾT NỐI API';
+    $('api-status').textContent = 'Chưa kết nối';
     toast(`Không tải được ứng dụng: ${error.message}`, true);
   }
 }
