@@ -1,113 +1,128 @@
-# Định giá động cho TMĐT bán lẻ (TV2 - AI Model)
+# Dynamic Pricing · Hướng dẫn chạy nhánh Thong
 
-Hệ thống gồm 3 phần: xử lý dữ liệu, huấn luyện mô hình nhu cầu và ước lượng elasticity, và API đề xuất giá.
-README này hướng dẫn cách tải dữ liệu, cài đặt và chạy từ đầu.
+Nhánh `Thong` có gói [`final_system/`](final_system/) để dựng dữ liệu theo tuần, huấn luyện và chạy API mô hình. API dự báo lượng bán cho **UCI Online Retail 352** và **M5**, đồng thời đề xuất giá cho các chuỗi sản phẩm–cửa hàng M5 có mô hình ARIMAX.
 
-## 1. Cấu trúc thư mục
+Thực hiện các lệnh bên dưới bằng **PowerShell** trong terminal của Visual Studio hoặc VS Code. Luồng này chạy bằng CPU và dùng API mô hình trực tiếp. Có thể thử bằng Swagger trước khi tích hợp backend, frontend và SQL Server.
 
-Tất cả file nằm ở thư mục gốc của dự án:
+## 1. Clone nhánh và cài thư viện
 
-```
-<thư mục dự án>/
-├── data/
-│   └── online_retail_II.xlsx                    <- TẢI THỦ CÔNG (xem mục 2)
-├── 1_data_processing_online_retail_2y.py
-├── 2_data_processing_online_retail_ml_2y.py
-├── 3_select_products_2y.py                      <- tùy chọn (xem mục 6)
-├── 4_train_final_model_online_retail_2y.py
-├── 5_fit_pricing_model_2y.py
-├── pricing_engine.py
-├── api_app.py
-├── y2_config.py
-├── y2_tools.py
-├── test.py                                      <- xem mục 6
-└── README.md
+Cần Git, Python từ **3.11** và vài GB trống để lưu thư viện, dữ liệu gốc, dữ liệu tuần và cache. Các bước đã được kiểm tra trên Windows với Python 3.14.4.
+
+```powershell
+git clone --branch Thong --single-branch https://github.com/LcNguyn72/dynamic-pricing.git
+Set-Location dynamic-pricing
+python --version
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r final_system/requirements.txt
 ```
 
-Thư mục `models_2y/` và file cache `data/online_retail_II_sheets.csv` sẽ được tạo tự động khi chạy. Không cần tạo tay.
+Nếu đã clone nhánh `Thong`, mở terminal tại thư mục có `final_system/` và bắt đầu từ `python --version`. Các lệnh dùng trực tiếp Python trong `.venv`, nên có thể dán vào PowerShell mà chưa kích hoạt môi trường ảo.
 
-## 2. Cần tải những gì
+## 2. Chuẩn bị bộ mô hình
 
-**Dữ liệu (bắt buộc, không đưa lên git):**
+Chọn **một** trong hai cách sau. Sau khi có `manifest.json` và tệp `.json.gz` được ghi trong manifest, chuyển sang bước 3.
 
-- Bộ dữ liệu: _Online Retail II_ của UCI Machine Learning Repository
-  - Trang: https://archive.ics.uci.edu/dataset/502/online+retail+ii
-  - Tải về, giải nén, lấy file `online_retail_II.xlsx`
-  - Đặt vào `data/online_retail_II.xlsx`
-  - Giấy phép CC BY 4.0. Khi báo cáo, nhớ trích dẫn: Chen, D. (2012), DOI 10.24432/C5CG6D
+### Cách A · Dùng bộ mô hình đã lưu
 
-**Thư viện Python (bắt buộc):**
+Nhận cả thư mục `runtime/models/` từ người đã huấn luyện và đặt vào `final_system/runtime/models/`. Kiểm tra tên tệp trong manifest khớp với tệp đã chép.
 
-- Python 3.10 trở lên
-- pandas, numpy, scipy, statsmodels, scikit-learn
-- xgboost phiên bản 2.x
-- openpyxl (để đọc file Excel)
-- fastapi, uvicorn (chỉ cần khi chạy API)
-
-Cài bằng một lệnh:
-
-```
-pip install pandas numpy scipy statsmodels scikit-learn "xgboost>=2.0" openpyxl fastapi uvicorn
+```powershell
+$manifest = Get-Content final_system/runtime/models/manifest.json -Raw | ConvertFrom-Json
+$manifest.version
+Test-Path (Join-Path 'final_system/runtime/models' $manifest.file)
 ```
 
-Kiểm tra phiên bản xgboost:
+Dòng cuối cần trả về `True`. Git bỏ qua `runtime/`, nên một bản clone mới sẽ tạo bộ mô hình bằng Cách B hoặc nhận từ thành viên trong nhóm theo Cách A.
 
-```
-python -c "import xgboost; print(xgboost.__version__)"
-```
+### Cách B · Tải dữ liệu và huấn luyện từ đầu
 
-**Lưu ý phiên bản:** file mô hình `demand_model_online_retail.pkl` được lưu bằng xgboost. Khi chạy trên máy khác, nên dùng cùng phiên bản xgboost, không thì có thể lỗi khi nạp mô hình. Nếu gặp lỗi, chạy lại bước 4 để tạo lại file mô hình trên máy đó.
+Chạy lần lượt từ thư mục gốc và chờ mỗi lệnh hoàn tất trước khi chạy lệnh tiếp theo.
 
-## 3. Cách chạy từ đầu
-
-Mở terminal tại thư mục dự án (nơi có `data/`), rồi chạy theo đúng thứ tự:
-
-```
-python 1_data_processing_online_retail_2y.py
-python 2_data_processing_online_retail_ml_2y.py
-python 4_train_final_model_online_retail_2y.py
-python 5_fit_pricing_model_2y.py
-python pricing_engine.py
-uvicorn api_app:app --port 8000
+```powershell
+.\.venv\Scripts\python.exe -u -m final_system.data_pipeline download
+.\.venv\Scripts\python.exe -u -m final_system.data_pipeline prepare
+.\.venv\Scripts\python.exe -u -m final_system.training train --workers 6
 ```
 
-| Bước | File                                       | Làm gì                                                             | Tạo ra (trong `models_2y/`)                                                                                                                                                       |
-| ---- | ------------------------------------------ | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1    | `1_data_processing_online_retail_2y.py`    | Đọc Excel, bỏ phần chồng lấn giữa 2 sheet, làm sạch, gộp theo tuần | `weekly_online_retail.csv`, `products_online_retail.csv`, và cache `data/online_retail_II_sheets.csv`                                                                             |
-| 2    | `2_data_processing_online_retail_ml_2y.py` | Tạo X, y và thống kê từng sản phẩm                                 | `X_online_retail.npy`, `y_online_retail.npy`, `is_test_online_retail.npy`, `feature_cols_online_retail.json`, `product_stats_online_retail.json`, `model_table_online_retail.csv` |
-| 4    | `4_train_final_model_online_retail_2y.py`  | Huấn luyện XGBoost dự báo lượng bán                                | `demand_model_online_retail.pkl`, `model_metrics_online_retail.json`                                                                                                              |
-| 5    | `5_fit_pricing_model_2y.py`                | Ước lượng elasticity từng sản phẩm, chọn cách co, tính độ bất định | `pricing_params_online_retail.csv`, `pricing_model_online_retail.json`                                                                                                            |
-| —    | `pricing_engine.py`                        | Kiểm tra engine, in bảng đề xuất mẫu                               | (không tạo file)                                                                                                                                                                  |
-| —    | `api_app.py`                               | Chạy API                                                           | (không tạo file)                                                                                                                                                                  |
+| Bước | Việc thực hiện | Thư mục đầu ra |
+| --- | --- | --- |
+| `download` | Tải UCI Online Retail 352 và ba tệp M5 gồm `sales_train_evaluation.csv`, `sell_prices.csv` và `calendar.csv`. Kiểm tra mã băm dữ liệu. | `final_system/runtime/raw/` |
+| `prepare` | Gộp theo tuần bắt đầu vào thứ Hai, áp dụng quy tắc xử lý theo giao thức V2, dựng đủ 10 cửa hàng M5 và đối chiếu khóa test. | `final_system/runtime/prepared/` |
+| `train` | Lưu danh mục SKU UCI dùng dự báo tuần trước. Huấn luyện AR(1) và ARIMAX cho M5, rồi ghi manifest và tham số mô hình. | `final_system/runtime/models/` |
 
-Bước 1 mất vài phút ở lần đầu vì đọc Excel. Các lần sau dùng cache nên nhanh hơn.
+Nếu đã tải dữ liệu, đặt tệp `Online Retail.xlsx` vào thư mục con `online_retail/` và ba CSV vào thư mục con `m5/` của `runtime/raw/`. Lệnh `download` dùng lại các tệp khớp mã băm. Có thể truyền cùng `--raw-root "<đường dẫn>"` cho `download` và `prepare` nếu dữ liệu nằm ở nơi khác. Máy ít tài nguyên có thể dùng `--workers 2`. Khi hoàn tất, lệnh `train` in `version` và `coverage` của bộ mô hình.
 
-## 4. Kiểm tra kết quả
+[Nguồn UCI Online Retail 352](https://archive.ics.uci.edu/dataset/352/online+retail) · [Nguồn tệp M5](https://zenodo.org/records/10203108)
 
-Sau bước 4, các con số sau phải khớp (nếu dữ liệu và môi trường giống nhau):
+## 3. Khởi động API và kiểm tra trạng thái
 
-- TEST R² (ln qty): khoảng **0.587**
-- MAE theo số lượng: khoảng **21.17** (baseline khoảng 23.37)
-- Số sản phẩm: **1306**
+Giữ terminal này mở trong khi thử API.
 
-Sau bước 5, phân vị elasticity trung bình khoảng **-1.5** (cầu co giãn vừa phải).
-
-## 5. Chạy API và thử
-
-Sau khi `uvicorn api_app:app --port 8000` chạy được:
-
-- Giao diện thử nghiệm: http://localhost:8000/docs
-- Kiểm tra tình trạng: http://localhost:8000/health
-
-Ví dụ gọi đề xuất giá (Windows CMD):
-
-```
-curl -X POST http://localhost:8000/recommend -H "Content-Type: application/json" -d "{\"sku\":\"22112\",\"current_price\":4.95,\"unit_cost\":3.0,\"date\":\"2011-11-15\"}"
+```powershell
+.\.venv\Scripts\python.exe -m uvicorn final_system.api:app --host 127.0.0.1 --port 18765
 ```
 
-Các endpoint: `/health`, `/model_info`, `/products`, `POST /recommend`, `POST /recommend/batch`, `GET /demand_curve/{sku}`.
+Mở [Swagger](http://127.0.0.1:18765/docs) hoặc dùng một terminal PowerShell thứ hai.
 
-## 6. Các file tùy chọn
+```powershell
+$modelApi = 'http://127.0.0.1:18765'
+Invoke-RestMethod "$modelApi/health"
+(Invoke-RestMethod "$modelApi/model-info").coverage
+```
 
-- `3_select_products_2y.py`: chọn 20 sản phẩm làm demo. Không cần để chạy API. Chạy sau bước 1.
-- `test.py`: không nằm trên đường chạy chính. Chạy riêng khi cần.
+`/health` trả `status = ready` và phiên bản mô hình. Với bộ mô hình đã kiểm tra, `/model-info` ghi nhận **3.387 SKU UCI**, **29.069 chuỗi SKU–cửa hàng M5** và **18.244 chuỗi có ARIMAX để thử giá**.
+
+## 4. Gửi hai yêu cầu mẫu
+
+Dán hai khối lệnh vào terminal PowerShell đang có biến `$modelApi`. Ngày trong `week` là thứ Hai, theo định dạng `YYYY-MM-DD`. Trong các ví dụ, `history` chứa lượng bán của tuần liền trước và thêm giá bán khi đề xuất giá M5.
+
+**Dự báo lượng bán UCI cho SKU `10120`**
+
+```powershell
+$forecastBody = @{
+    dataset = 'uci'
+    sku = '10120'
+    week = '2011-10-10'
+    history = @(@{ week = '2011-10-03'; qty = 5 })
+} | ConvertTo-Json -Depth 5
+
+$forecastResult = Invoke-RestMethod -Uri "$modelApi/forecast" -Method Post -ContentType 'application/json' -Body $forecastBody
+$forecastResult | Select-Object method, predicted_qty, source_week, model_version
+```
+
+Kết quả mẫu có `method = previous_week` và `predicted_qty = 5` sản phẩm.
+
+**Đề xuất giá M5 cho `FOODS_3_090` tại cửa hàng `CA_1`**
+
+```powershell
+$priceBody = @{
+    sku = 'FOODS_3_090'
+    store_id = 'CA_1'
+    week = '2015-08-03'
+    history = @(@{ week = '2015-07-27'; qty = 454; price = 1.48 })
+} | ConvertTo-Json -Depth 5
+
+$priceResult = Invoke-RestMethod -Uri "$modelApi/recommend-price" -Method Post -ContentType 'application/json' -Body $priceBody
+$priceResult.grid_result
+$priceResult.fixed_reference
+$priceResult.candidates.Count
+```
+
+- `grid_result` là mức giá có doanh thu dự kiến cao nhất trong các ứng viên. Bộ mô hình đã kiểm tra trả khoảng **1,00 USD**, với **984,80 USD doanh thu dự kiến**.
+- `fixed_reference` là giá cố định đối chiếu khi chuỗi có mốc từ validation. Ví dụ này trả **1,012 USD**.
+- `candidates` chứa danh sách giá, lượng bán dự báo và doanh thu dự kiến cho từng mức. Ví dụ có **41 ứng viên**.
+
+## 5. Kiểm thử và lỗi thường gặp
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s final_system/tests -v
+```
+
+| Hiện tượng | Cách xử lý |
+| --- | --- |
+| `No module named final_system` | Mở terminal tại thư mục cha của `final_system/`. |
+| API dừng khi báo `No model bundle` | Kiểm tra `final_system/runtime/models/manifest.json` và tệp `.json.gz` khớp với manifest, hoặc chạy lại mục 2. |
+| `Address already in use` | Chọn cổng khác trong lệnh Uvicorn rồi đổi `$modelApi` sang cùng cổng. |
+| HTTP `422` khi đề xuất giá M5 | Xem `detail` trong phản hồi. Kiểm tra mã cửa hàng, ngày thứ Hai và lịch sử tuần liền trước có cả lượng bán lẫn giá. Những chuỗi thiếu ARIMAX sẽ trả lỗi `price_model_unavailable`. |
+
+[Xem thêm hợp đồng API và cấu hình mô hình](final_system/README.md). Hướng dẫn cho demo Online Retail II và nhóm script `*_2y.py` nằm trong [README của bản demo cũ](https://github.com/LcNguyn72/dynamic-pricing/blob/2917712af3d8b73b169e36e68c0063facbe08537/README.md).
