@@ -1,11 +1,13 @@
-"""One-step forecasts and price-grid ranking from observed weekly history."""
+"""One-step quantity forecasts and pricing from observed weekly history."""
 
 from __future__ import annotations
 
 from datetime import date, timedelta
 import math
+from statistics import mean
 
 from .bundle import ModelBundle
+from .feedback import update_arimax
 from .schemas import ForecastRequest, PriceRequest, WeekObservation
 
 
@@ -50,6 +52,22 @@ def _arimax_state(series, week, history):
     return state
 
 
+def _shared_demand(bundle, series, request, previous):
+    state = _arimax_state(series, request.week, previous)
+    feedback = request.feedback
+    if any(row.week.weekday() != 0 for row in feedback):
+        raise InferenceError("invalid_week", "Tuần phản hồi phải bắt đầu vào thứ Hai.")
+    if any(row.week >= request.week for row in feedback):
+        raise InferenceError("future_feedback", "Phản hồi phải đến từ tuần trước tuần dự báo.")
+    if len({row.week for row in feedback}) != len(feedback):
+        raise InferenceError("duplicate_feedback_week", "Phản hồi có tuần trùng.")
+    dates = bundle.manifest["config"].get("datasets", {}).get("m5", {})
+    if "train_end" in dates:
+        train_end = date.fromisoformat(dates["train_end"])
+        feedback = [row for row in feedback if row.week > train_end]
+    return update_arimax(state, feedback)
+
+
 def _price_point(state, history: WeekObservation, price):
     intercept, beta, phi, _ = state["params"]
     quantity_lag_z = (history.qty - state["qty_mean"]) / state["qty_sd"]
@@ -72,23 +90,32 @@ def forecast(bundle: ModelBundle, request: ForecastRequest):
     response = {"dataset": request.dataset, "sku": request.sku, "store_id": request.store_id, "week": week,
                 "source_week": previous.week, "model_version": bundle.manifest["version"], "unit": "items_per_week"}
     if request.dataset == "uci":
-        if request.store_id is not None or request.candidate_price is not None:
+        if request.store_id is not None or request.candidate_price is not None or request.feedback:
             raise InferenceError("uci_quantity_only", "UCI chỉ nhận yêu cầu dự báo lượng bán theo SKU.")
         if request.sku not in bundle.data["uci_skus"]:
             raise InferenceError("unknown_series", "Không tìm thấy SKU UCI trong bộ mô hình.", 404)
         if previous.week != week - timedelta(days=7):
             raise InferenceError("missing_previous_week", "Dự báo UCI cần lượng bán của tuần liền trước.")
+        uci = bundle.manifest["config"].get("datasets", {}).get("uci", {})
+        if uci.get("forecast") == "rolling_mean_4":
+            quantities = {row.week: row.qty for row in request.history}
+            lag_weeks = [week - timedelta(weeks=lag) for lag in range(1, 5)]
+            if all(lag_week in quantities for lag_week in lag_weeks):
+                prediction = mean(quantities[lag_week] for lag_week in lag_weeks)
+                return {**response, "method": "rolling_mean_4", "predicted_qty": prediction}
         return {**response, "method": "previous_week", "predicted_qty": previous.qty}
 
     key, series = _series(bundle, request.sku, request.store_id)
     response["series_id"] = key
-    if request.candidate_price is not None:
-        state = _arimax_state(series, week, previous)
-        if not state["price_min"] <= request.candidate_price <= state["price_max"]:
-            raise InferenceError("price_outside_train_range", "Giá ứng viên nằm ngoài miền giá train của SKU.")
-        point = _price_point(state, previous, request.candidate_price)
+    m5 = bundle.manifest["config"].get("datasets", {}).get("m5", {})
+    if request.candidate_price is not None or request.feedback or m5.get("forecast") == "arimax_1_0_0_shared":
+        state, feedback_count = _shared_demand(bundle, series, request, previous)
+        price = previous.price if request.candidate_price is None else request.candidate_price
+        if not state["price_min"] <= price <= state["price_max"]:
+            raise InferenceError("price_outside_train_range", "Chọn giá trong miền giá huấn luyện của SKU.")
+        point = _price_point(state, previous, price)
         return {**response, "method": "arimax_1_0_0", "candidate_price": point["price"],
-                "predicted_qty": point["predicted_qty"]}
+                "predicted_qty": point["predicted_qty"], "feedback_count": feedback_count}
 
     state = series["ar1"]
     if state is None:
@@ -104,11 +131,11 @@ def forecast(bundle: ModelBundle, request: ForecastRequest):
     return {**response, "method": "arima_1_0_0", "predicted_qty": max(0.0, prediction)}
 
 
-def recommend_price(bundle: ModelBundle, request: PriceRequest):
+def recommend_price(bundle: ModelBundle, request: PriceRequest, policy=None):
     week = request.week
     previous = _history(bundle, "m5", week, request.history)
     key, series = _series(bundle, request.sku, request.store_id)
-    state = _arimax_state(series, week, previous)
+    state, feedback_count = _shared_demand(bundle, series, request, previous)
     low, high = state["price_min"], state["price_max"]
     current = previous.price if request.current_price is None else request.current_price
     points = bundle.manifest["config"]["pricing"]["grid_points"]
@@ -121,6 +148,21 @@ def recommend_price(bundle: ModelBundle, request: PriceRequest):
     ties = [point for point in candidates if max_revenue - point["expected_revenue"] <= 1e-8]
     best = min(ties, key=lambda point: (abs(point["price"] - current), point["price"]))
 
+    recommendation, policy_version = best, None
+    if request.strategy == "ppo_feedback":
+        if policy is None:
+            raise InferenceError("ppo_policy_unavailable", "Policy PPO chưa được nạp vào API mô hình.", 503)
+        try:
+            policy_price = policy.recommend(sku=request.sku, store_id=request.store_id,
+                                            previous_qty=previous.qty, previous_price=previous.price,
+                                            current_price=current, week=week, state=state)
+        except LookupError as exc:
+            raise InferenceError("ppo_series_unavailable", "PPO chưa hỗ trợ cặp sản phẩm và cửa hàng này.") from exc
+        if not low <= policy_price <= high:
+            raise InferenceError("invalid_ppo_price", "Policy PPO trả giá ngoài miền đã huấn luyện.", 503)
+        recommendation = _price_point(state, previous, policy_price)
+        policy_version = policy.version
+
     reference = series["fixed_reference_price"]
     dates = bundle.manifest["config"].get("datasets", {}).get("m5", {})
     if reference is None:
@@ -130,9 +172,12 @@ def recommend_price(bundle: ModelBundle, request: PriceRequest):
     else:
         status = "available"
     return {"dataset": "m5", "series_id": key, "week": week, "model_version": bundle.manifest["version"],
-            "method": "arimax_1_0_0_grid", "currency": "USD", "source_week": previous.week,
+            "method": f"arimax_1_0_0_{request.strategy}", "strategy": request.strategy,
+            "policy_version": policy_version, "feedback_count": feedback_count,
+            "currency": "USD", "source_week": previous.week,
             "current_price": current, "current_price_in_train_range": in_support,
+            "current_price_point": _price_point(state, previous, current) if in_support else None,
             "train_price_range": {"min": low, "max": high},
-            "grid_result": best, "fixed_reference_status": status,
+            "grid_result": best, "recommendation": recommendation, "fixed_reference_status": status,
             "fixed_reference": None if reference is None else _price_point(state, previous, reference),
             "candidates": candidates}

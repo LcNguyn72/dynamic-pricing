@@ -1,6 +1,7 @@
 """HTTP API for the versioned model bundle."""
 
 from contextlib import asynccontextmanager
+import logging
 import os
 
 from fastapi import FastAPI, Request
@@ -9,7 +10,11 @@ from fastapi.responses import JSONResponse
 
 from .bundle import DEFAULT_MODEL_DIR, load_bundle
 from .engine import InferenceError, forecast, recommend_price
+from .ppo_policy import PpoArtifactError, load_ppo_policy
 from .schemas import ForecastRequest, ForecastResponse, PriceRequest, PriceResponse
+
+
+logger = logging.getLogger(__name__)
 
 
 def create_app(model_dir=None):
@@ -17,9 +22,14 @@ def create_app(model_dir=None):
     async def lifespan(app):
         directory = model_dir or os.environ.get("FINAL_SYSTEM_MODEL_DIR") or DEFAULT_MODEL_DIR
         app.state.model_bundle = load_bundle(directory)
+        try:
+            app.state.ppo_policy = load_ppo_policy(app.state.model_bundle)
+        except PpoArtifactError as error:
+            logger.warning("PPO disabled: %s", error)
+            app.state.ppo_policy = None
         yield
 
-    app = FastAPI(title="Dynamic Pricing Model API", version="1.0.0", lifespan=lifespan)
+    app = FastAPI(title="Dynamic Pricing Model API", version="1.1.0", lifespan=lifespan)
 
     @app.exception_handler(InferenceError)
     async def inference_error(_request: Request, error: InferenceError):
@@ -41,9 +51,14 @@ def create_app(model_dir=None):
     def model_info(request: Request):
         manifest = request.app.state.model_bundle.manifest
         config = manifest["config"]
+        policy = request.app.state.ppo_policy
         pricing = {key: value for key, value in config["pricing"].items() if key != "reference_skus"}
         return {"model_version": manifest["version"], "protocol_id": config["protocol_id"],
                 "datasets": config["datasets"], "m5_fit": config["m5_fit"], "pricing": pricing,
+                "m5_pricing_policies": {"grid": {"available": True},
+                                        "ppo_feedback": {"available": policy is not None,
+                                                         "version": policy.version if policy else None,
+                                                         "scope": policy.scope if policy else []}},
                 "coverage": manifest["coverage"], "provenance": manifest["provenance"]}
 
     @app.post("/forecast", response_model=ForecastResponse, response_model_exclude_unset=True,
@@ -52,9 +67,9 @@ def create_app(model_dir=None):
         return forecast(request.app.state.model_bundle, payload)
 
     @app.post("/recommend-price", response_model=PriceResponse,
-              summary="Rank prices within an M5 series' training support")
+              summary="Recommend a grid or PPO price within an M5 series' training support")
     def price_endpoint(payload: PriceRequest, request: Request):
-        return recommend_price(request.app.state.model_bundle, payload)
+        return recommend_price(request.app.state.model_bundle, payload, request.app.state.ppo_policy)
 
     return app
 

@@ -66,6 +66,49 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(point["predicted_qty"], 12)
         self.assertEqual(point["source_week"], date(2015, 7, 27))
 
+    def test_shared_arimax_honors_feedback_for_forecasts_and_both_price_strategies(self):
+        value = bundle()
+        value.manifest["config"]["datasets"]["m5"]["forecast"] = "arimax_1_0_0_shared"
+        lag = {"week": "2015-07-27", "qty": 12, "price": 2}
+        feedback = [
+            {"week": f"2015-07-{day:02d}", "qty": 6, "price": price,
+             "previous_qty": 12, "previous_price": 2}
+            for day, price in ((6, 1), (13, 2.5), (20, 3), (27, 2))
+        ]
+        payload = {"sku": "P", "store_id": "CA_1", "week": "2015-08-03", "history": [lag]}
+        default = forecast(value, ForecastRequest(dataset="m5", **payload))
+        self.assertEqual(default["method"], "arimax_1_0_0")
+        self.assertEqual(default["candidate_price"], 2)
+        refreshed = dict(payload, feedback=feedback)
+        grid = recommend_price(value, PriceRequest(**refreshed))
+
+        class Policy:
+            version = "test-policy"
+
+            def recommend(self, **inputs):
+                return 2.123
+
+        ppo = recommend_price(value, PriceRequest(strategy="ppo_feedback", **refreshed), Policy())
+        self.assertEqual(ppo["policy_version"], "test-policy")
+        self.assertEqual(ppo["recommendation"]["price"], 2.123)
+        self.assertEqual(grid["grid_result"], ppo["grid_result"])
+        for result in (grid, ppo):
+            price = result["recommendation"]["price"]
+            point = forecast(value, ForecastRequest(dataset="m5", candidate_price=price, **refreshed))
+            self.assertEqual(point["feedback_count"], 4)
+            self.assertEqual(point["predicted_qty"], result["recommendation"]["predicted_qty"])
+        self.assertEqual(grid["feedback_count"], 4)
+        self.assertNotEqual(grid["grid_result"], recommend_price(value, PriceRequest(**payload))["grid_result"])
+
+    def test_target_week_cannot_be_used_as_feedback(self):
+        request = PriceRequest(sku="P", store_id="CA_1", week="2015-08-03",
+                               history=[{"week": "2015-07-27", "qty": 12, "price": 2}],
+                               feedback=[{"week": "2015-08-03", "qty": 50, "price": 2,
+                                          "previous_qty": 12, "previous_price": 2}])
+        with self.assertRaises(InferenceError) as error:
+            recommend_price(bundle(), request)
+        self.assertEqual(error.exception.code, "future_feedback")
+
     def test_ar1_projects_across_unobserved_weeks_without_zero_filling(self):
         request = ForecastRequest(dataset="m5", store_id="CA_1", sku="P", week="2015-08-03",
                                   history=[{"week": "2015-07-20", "qty": 12}])
@@ -97,6 +140,35 @@ class EngineTests(unittest.TestCase):
         request = ForecastRequest(dataset="uci", sku="A", week="2011-10-17",
                                   history=[{"week": "2011-10-10", "qty": 0}])
         self.assertEqual(forecast(bundle(), request)["predicted_qty"], 0)
+
+    def test_uci_mean_uses_four_consecutive_weeks_including_zero(self):
+        value = bundle()
+        value.manifest["config"]["datasets"]["uci"] = {"forecast": "rolling_mean_4"}
+        request = ForecastRequest(dataset="uci", sku="A", week="2011-10-17", history=[
+            {"week": "2011-10-03", "qty": 8},
+            {"week": "2011-09-12", "qty": 100},
+            {"week": "2011-10-10", "qty": 0},
+            {"week": "2011-09-19", "qty": 4},
+            {"week": "2011-09-26", "qty": 12},
+        ])
+        response = forecast(value, request)
+        self.assertEqual(response["method"], "rolling_mean_4")
+        self.assertEqual(response["predicted_qty"], 6)
+        self.assertEqual(response["source_week"], date(2011, 10, 10))
+        self.assertEqual(forecast(bundle(), request)["method"], "previous_week")
+
+    def test_uci_mean_with_a_gap_uses_previous_week_fallback(self):
+        value = bundle()
+        value.manifest["config"]["datasets"]["uci"] = {"forecast": "rolling_mean_4"}
+        request = ForecastRequest(dataset="uci", sku="A", week="2011-10-17", history=[
+            {"week": "2011-10-10", "qty": 5},
+            {"week": "2011-09-26", "qty": 12},
+            {"week": "2011-09-19", "qty": 8},
+            {"week": "2011-09-12", "qty": 44},
+        ])
+        response = forecast(value, request)
+        self.assertEqual(response["method"], "previous_week")
+        self.assertEqual(response["predicted_qty"], 5)
 
     def test_bundle_rejects_a_corrupt_payload(self):
         with tempfile.TemporaryDirectory() as temp:

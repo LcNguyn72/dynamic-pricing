@@ -12,7 +12,7 @@
       "validation_end": "2011-10-03",
       "test_start": "2011-10-10",
       "test_keys_sha256": "6c7c37bbae2adb0cfcd75d98f3553c7b4f41b569ca2d0f2cb7df0f154279c689",
-      "forecast": "previous_week"
+      "forecast": "rolling_mean_4"
     },
     "m5": {
       "source": "M5 sales_train_evaluation.csv",
@@ -24,7 +24,7 @@
       "validation_end": "2015-07-27",
       "test_start": "2015-08-03",
       "test_keys_sha256": "306da95af8a5553312ab27760e0c1d306834749dcc5149b51040368c5d4f1af3",
-      "forecast": "arima_1_0_0_with_last_observed_fallback"
+      "forecast": "arimax_1_0_0_shared"
     }
   },
   "m5_fit": {
