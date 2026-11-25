@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from contextlib import closing
 from datetime import date, timedelta
+from decimal import Decimal
 import json
 import logging
 import os
@@ -24,7 +25,7 @@ from database.m5_repository import M5DataError, M5Repository
 
 
 FRONTEND = Path(__file__).resolve().parents[1] / "frontend"
-M5_ASSETS = {"m5.css", "m5.js"}
+M5_ASSETS = {"m5.css", "m5.js", "m5-basket.webp", "m5-products.webp"}
 LOGGER = logging.getLogger(__name__)
 POSITIVE_PRICE = Annotated[float, Field(gt=0, le=1_000_000, allow_inf_nan=False)]
 STORE_KEY = Annotated[str, StringConstraints(pattern=r"^[A-Z0-9_]{1,16}$")]
@@ -52,6 +53,22 @@ class ForecastInput(WeekInput):
 class PriceInput(WeekInput):
     current_price: POSITIVE_PRICE | None = None
     strategy: Literal["grid", "ppo_feedback"] = "grid"
+
+
+class CatalogPriceInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    price: Annotated[Decimal, Field(gt=0, le=1_000_000, decimal_places=2)]
+
+
+class CatalogBatchPriceInput(CatalogPriceInput):
+    store_ids: Annotated[list[STORE_KEY], Field(min_length=1, max_length=10)]
+
+    @field_validator("store_ids")
+    @classmethod
+    def unique_stores(cls, stores: list[str]) -> list[str]:
+        if len(stores) != len(set(stores)):
+            raise ValueError("Mỗi cửa hàng chỉ được chọn một lần.")
+        return stores
 
 
 class FeedbackInput(WeekInput):
@@ -132,6 +149,35 @@ def assets(name: str):
 @app.get("/api/m5/stores")
 def stores(repository: Repository):
     return {"stores": repository.stores()}
+
+
+@app.get("/api/m5/catalog")
+def catalog(repository: Repository):
+    return {"items": repository.catalog()}
+
+
+@app.get("/api/m5/home-highlights")
+def home_highlights(repository: Repository):
+    return repository.home_highlights()
+
+
+@app.get("/api/m5/catalog/{sku}")
+def catalog_item(sku: PRODUCT_KEY, repository: Repository):
+    return repository.catalog_item(sku)
+
+
+@app.put("/api/m5/catalog/{sku}/stores/{store_id}/price")
+def set_catalog_price(sku: PRODUCT_KEY, store_id: STORE_KEY, data: CatalogPriceInput, repository: Repository):
+    result = repository.set_catalog_price(sku, store_id, data.price)
+    repository.db.commit()
+    return result
+
+
+@app.put("/api/m5/catalog/{sku}/price")
+def set_catalog_prices(sku: PRODUCT_KEY, data: CatalogBatchPriceInput, repository: Repository):
+    results = repository.set_catalog_prices(sku, data.store_ids, data.price)
+    repository.db.commit()
+    return {"sku": sku, "price": data.price, "stores": results}
 
 
 @app.get("/api/m5/products")

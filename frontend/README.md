@@ -1,4 +1,13 @@
-# Chạy giao diện
+# Chạy giao diện M5
+
+Mở [Quầy Giá](http://127.0.0.1:18767/) sau khi chuẩn bị SQL Server, danh mục 20 sản phẩm và hai dịch vụ theo [README dự án](../README.md#ứng-dụng-cửa-hàng-m5). Backend phục vụ trực tiếp `m5.html`.
+
+- **Trang chủ** so sánh tổng giá cùng một giỏ 20 sản phẩm tại 10 cửa hàng và xếp hạng 5 sản phẩm bán nhiều nhất trong tuần M5.
+- **Sản phẩm** mở bảng giá cùng SKU tại 10 cửa hàng. **Chỉnh giá** lưu giá ngay cho cửa hàng đã chọn và ghi lịch sử thao tác. Giá ban đầu lấy từ tuần 16/05/2016 của M5.
+- **Dự đoán giá** hiển thị mức giá đề xuất cùng lượng bán và doanh thu dự kiến. Bấm **Áp dụng** để lưu cho cửa hàng đang xem.
+- **Xu hướng bán hàng** trên trang chi tiết vẽ giá, số lượng đã bán và doanh thu trong 12 tuần M5, với tùy chọn so sánh hai cửa hàng.
+
+## Giao diện Online Retail II và trang thí nghiệm
 
 Từ thư mục gốc dự án, mở hai terminal:
 

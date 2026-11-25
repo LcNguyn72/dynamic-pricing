@@ -2,7 +2,7 @@
 
 ## Ứng dụng cửa hàng M5
 
-Giao diện có bốn mục **Tổng quan, Sản phẩm, Thống kê, Định giá**. Chọn cửa hàng để xem lịch sử bán hàng hoặc so sánh lưới giá và PPO có phản hồi. Backend truy vấn cơ sở dữ liệu `DynamicPricingM5` trong SQL Server rồi gọi API mô hình. Cả hai cách chọn giá và trang dự báo lượng bán dùng chung ARIMAX(1,0,0). UCI được đánh giá riêng trong phần thí nghiệm.
+Giao diện **Quầy Giá** hiển thị 20 sản phẩm mẫu, mỗi sản phẩm có 10 dòng giá theo cửa hàng. Mở chi tiết để xem biểu đồ lịch sử hoặc chỉnh giá. Giá mới có hiệu lực khi lưu thành công vào SQL Server `DynamicPricingM5`. Trang **Dự đoán giá** dùng API mô hình M5 để tính một mức giá đề xuất bằng lưới giá và ARIMAX(1,0,0).
 
 Chạy các lệnh ở thư mục gốc dự án. Máy cần Python, SQL Server, ODBC Driver 18 và `sqlcmd`. Có thể mở `database/m5_schema.sql` trong SSMS và chạy toàn bộ tệp nếu dùng SSMS thay cho `sqlcmd`.
 
@@ -20,14 +20,20 @@ Chạy các lệnh ở thư mục gốc dự án. Máy cần Python, SQL Server,
    $env:M5_SQL_SERVER = '.\SQLEXPRESS'
    sqlcmd -S $env:M5_SQL_SERVER -E -b -i database/m5_schema.sql
    python -m database.import_m5 --all
+   sqlcmd -S $env:M5_SQL_SERVER -E -b -d DynamicPricingM5 -f 65001 -i database/m5_storefront.sql
    ```
 
-   Bỏ `--all` để nhập trước hai cửa hàng `CA_1`, `TX_1`. Chạy lại `--all` sẽ kiểm tra hash và nhập các cửa hàng còn thiếu. Backend dùng `M5_SQL_SERVER` hoặc `M5_DB_CONNECTION_STRING` từ cửa sổ nó được khởi động.
+   Danh mục cần dữ liệu của đủ 10 cửa hàng. Nếu đã nhập dữ liệu, chỉ cần chạy lệnh SQL cuối để tạo danh mục và bảng lưu lịch sử chỉnh giá. Backend dùng `M5_SQL_SERVER` hoặc `M5_DB_CONNECTION_STRING` từ cửa sổ nó được khởi động.
 
-3. Chuẩn bị mô hình. Nếu nhận artifact từ nhóm, chép `final_system/runtime/models/` và `final_system/runtime/ppo/m5-policy.json` rồi chuyển sang bước 4. Nếu dựng lại từ đầu, chạy theo thứ tự sau.
+3. Chuẩn bị mô hình. Nếu nhận artifact từ nhóm, chép `final_system/runtime/models/` rồi chuyển sang bước 4. Nếu dựng lại từ đầu, chạy lệnh huấn luyện ARIMAX sau.
 
    ```powershell
    python -m final_system.training train --workers 6
+   ```
+
+   Khi cần thử PPO trong API, chép `final_system/runtime/ppo/m5-policy.json` tương ứng với bộ ARIMAX hoặc tạo lại bằng các lệnh sau.
+
+   ```powershell
    python -m pip install -r requirements-experiments.txt
    python -m experiments.train_m5_serving_ppo
    ```
@@ -39,9 +45,7 @@ Chạy các lệnh ở thư mục gốc dự án. Máy cần Python, SQL Server,
    python -m uvicorn backend.m5_api:app --host 127.0.0.1 --port 18767
    ```
 
-   Mở [ứng dụng M5](http://127.0.0.1:18767/) hoặc [Swagger của backend](http://127.0.0.1:18767/docs). Để so sánh hai cách chọn giá, thử `FOODS_3_090` ở `CA_1`, tuần `2015-08-03`. Lưới có tham số cho 18.244 cặp SKU–cửa hàng. PPO hỗ trợ 10 cặp đã huấn luyện, mỗi cửa hàng một cặp. Trang Định giá cho biết khi PPO chưa khả dụng với lựa chọn hiện tại.
-
-   Phần phản hồi dùng giá và lượng bán đã quan sát. Chọn **Lịch sử M5** để phát lại một tuần có dữ liệu, hoặc nhập số thực tế cho tuần sau giai đoạn lưu trữ. Hệ số giá của ARIMAX được cập nhật khi có ít nhất bốn tuần đủ điều kiện, với giá thay đổi, trước tuần cần dự báo. Giá đề xuất chỉ dùng để mô phỏng.
+   Mở [ứng dụng M5](http://127.0.0.1:18767/) và thử **Sản phẩm → Mứt quả mọng → Chỉnh giá** tại một cửa hàng. Dùng **Xem giá đề xuất** để chuyển sang trang dự đoán. Giá đề xuất dùng để tham khảo trước khi người dùng tự lưu giá mới. Nhóm có thể thử PPO và phản hồi ở [Swagger của backend](http://127.0.0.1:18767/docs).
 
 Trên 10 cặp SKU–cửa hàng, 20 tuần test và 5 seed nhiễu, chỉ số doanh thu mô phỏng so với giá trung vị train (= 100) là **120,48 ± 2,41** cho lưới có phản hồi và **94,97 ± 0,82** cho PPO có phản hồi. Lưới là lựa chọn mặc định. Chi tiết nằm tại `final_system/runtime/ppo/m5-policy.evaluation.json` sau khi chạy huấn luyện PPO.
 
