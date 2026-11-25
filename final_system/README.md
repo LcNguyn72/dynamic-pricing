@@ -91,10 +91,10 @@ $forecast | Format-List method, candidate_price, predicted_qty, feedback_count
 
 `recommendation` trả về `price`, `predicted_qty` và `expected_revenue`. Với bộ tham số và policy đang bàn giao, ví dụ chưa có phản hồi này cho kết quả sau:
 
-| Phương pháp | Giá đề xuất | Lượng bán dự báo | Doanh thu dự kiến |
-| --- | ---: | ---: | ---: |
-| Lưới | 1,00 USD | 984,80 | 984,80 USD |
-| PPO | 1,224688 USD | 727,44 | 890,89 USD |
+| Phương pháp |  Giá đề xuất | Lượng bán dự báo | Doanh thu dự kiến |
+| ----------- | -----------: | ---------------: | ----------------: |
+| Lưới        |     1,00 USD |           984,80 |        984,80 USD |
+| PPO         | 1,224688 USD |           727,44 |        890,89 USD |
 
 Kết quả `/forecast` tại giá được chọn khớp với lượng bán dự báo trong kết quả định giá. Mỗi phương pháp là một yêu cầu tới cùng endpoint `/recommend-price`.
 
@@ -106,7 +106,7 @@ Bạn cũng có thể dán yêu cầu sau vào `POST /recommend-price` trên Swa
   "sku": "FOODS_3_090",
   "store_id": "CA_1",
   "week": "2015-08-03",
-  "history": [{"week": "2015-07-27", "qty": 454, "price": 1.48}],
+  "history": [{ "week": "2015-07-27", "qty": 454, "price": 1.48 }],
   "strategy": "grid"
 }
 ```
@@ -120,20 +120,20 @@ Bạn cũng có thể dán yêu cầu sau vào `POST /recommend-price` trên Swa
 
 ### Nếu gặp lỗi
 
-| Hiện tượng | Cách xử lý |
-| --- | --- |
-| API báo thiếu model bundle khi bật | Kiểm tra `runtime/models/manifest.json` và tệp `.json.gz` mà manifest tham chiếu. |
-| `ppo_feedback.available = false` | Chép `runtime/ppo/m5-policy.json` đúng bản ARIMAX rồi khởi động lại API. Lưới vẫn dùng được. |
-| `ppo_series_unavailable` | Chọn cặp có trong `ppo_feedback.scope` hoặc dùng lưới. |
-| `missing_previous_week` | Thêm giá và lượng bán quan sát của tuần liền trước vào `history`. |
-| `price_outside_train_range` | Khi gửi `candidate_price`, chọn giá trong `train_price_range` mà endpoint đề xuất giá trả về. |
-| `price_model_unavailable` | Chọn cặp SKU–cửa hàng có mô hình ARIMAX. Ví dụ trong mục 4 có mô hình. |
+| Hiện tượng                         | Cách xử lý                                                                                    |
+| ---------------------------------- | --------------------------------------------------------------------------------------------- |
+| API báo thiếu model bundle khi bật | Kiểm tra `runtime/models/manifest.json` và tệp `.json.gz` mà manifest tham chiếu.             |
+| `ppo_feedback.available = false`   | Chép `runtime/ppo/m5-policy.json` đúng bản ARIMAX rồi khởi động lại API. Lưới vẫn dùng được.  |
+| `ppo_series_unavailable`           | Chọn cặp có trong `ppo_feedback.scope` hoặc dùng lưới.                                        |
+| `missing_previous_week`            | Thêm giá và lượng bán quan sát của tuần liền trước vào `history`.                             |
+| `price_outside_train_range`        | Khi gửi `candidate_price`, chọn giá trong `train_price_range` mà endpoint đề xuất giá trả về. |
+| `price_model_unavailable`          | Chọn cặp SKU–cửa hàng có mô hình ARIMAX. Ví dụ trong mục 4 có mô hình.                        |
 
-## 5. Dựng lại khi chỉ có mã nguồn
+## 5. Chọn một trong hai luồng train
 
-### Tạo bộ mô hình dùng cho dự báo và lưới
+### Luồng 1 — pipeline cũ UCI/M5 và API
 
-Chạy từ thư mục cha chứa `final_system/` sau khi cài đặt ở mục 1.
+Luồng này giữ cách chạy cũ: tải và chuẩn bị UCI/M5, train model serving, rồi chạy API theo các mục 2–4. Chạy từ thư mục cha chứa `final_system/` sau khi cài đặt ở mục 1.
 
 ```powershell
 $python = '.\.venv\Scripts\python.exe'
@@ -142,33 +142,29 @@ $python = '.\.venv\Scripts\python.exe'
 & $python -m final_system.training train --workers 6
 ```
 
-| Bước | Kết quả |
-| --- | --- |
+| Bước       | Kết quả                                                                                                                                                                                                                                                                                                            |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `download` | Tải và kiểm tra UCI Online Retail 352 cùng ba CSV M5 (`sales_train_evaluation.csv`, `sell_prices.csv`, `calendar.csv`) vào `runtime/raw/`. Script dùng lại nguồn đã tải nếu khớp mã kiểm tra. [Nguồn UCI](https://archive.ics.uci.edu/dataset/352/online+retail) · [Nguồn M5](https://zenodo.org/records/10203108) |
-| `prepare` | Dựng panel theo tuần cho hai tập riêng vào `runtime/prepared/`. M5 có 10 cửa hàng. UCI áp dụng quy tắc loại ngoại lệ học từ train trên chính tập train và giữ lượng bán hợp lệ ở validation/test. Script xác minh tập khóa test đã chốt. |
-| `train` | Huấn luyện tham số M5 từ 193 tuần train, tạo giá đối chiếu cho 60 chuỗi từ validation và lưu bộ mô hình vào `runtime/models/`. Với UCI, bộ mô hình lưu danh mục SKU và cấu hình trung bình 4 tuần. |
+| `prepare`  | Dựng panel theo tuần cho hai tập riêng vào `runtime/prepared/`. M5 có 10 cửa hàng. UCI áp dụng quy tắc loại ngoại lệ học từ train trên chính tập train và giữ lượng bán hợp lệ ở validation/test. Script xác minh tập khóa test đã chốt.                                                                           |
+| `train`    | Huấn luyện tham số M5 từ 193 tuần train, tạo giá đối chiếu cho 60 chuỗi từ validation và lưu bộ mô hình vào `runtime/models/`. Với UCI, bộ mô hình lưu danh mục SKU và cấu hình trung bình 4 tuần.                                                                                                                 |
 
 Có thể giảm `--workers` nếu máy thiếu RAM. Nếu đã có dữ liệu gốc ở nơi khác, dùng `--raw-root` cho `download` và `prepare`. Nếu muốn đặt panel ở nơi khác, dùng cùng `--prepared-root` cho `prepare` và `train`. Lệnh `final_system.training import-verified` dành cho repo đã có các artifact thí nghiệm Phase 1, ARIMAX và ARIMAX–PPO dùng để đối chiếu.
 
-### Chọn nguồn riêng để chuẩn hóa, train và test
+`FINAL_SYSTEM_DATA_SOURCE` không điều khiển luồng cũ này. Trong pipeline cũ, `download` và `prepare` dựng dữ liệu UCI/M5; `train` tạo model serving dùng M5.
 
-Luồng `source-train` nằm trong `final_system/` và chạy độc lập với protocol/bundle UCI–M5 ở trên. Mỗi lần chạy chọn đúng một nguồn, chia train/test theo thời gian, rồi lưu model, panel, dự đoán test, metrics và manifest mới trong thư mục run riêng. Luồng này không ghi đè `runtime/models/` hoặc artifacts của nguồn còn lại.
+### Luồng 2 — dữ liệu Lazada
 
-Chọn nguồn trong `final_system/.env` (có thể tạo từ `.env.example`):
+Luồng này đọc dữ liệu crawler, chuẩn hóa rồi train/test theo thời gian. Nó không chạy các bước download/prepare UCI/M5 ở luồng 1, không cần model bundle M5 và không ghi đè `runtime/models/`.
 
-```env
-FINAL_SYSTEM_DATA_SOURCE=lazada
-```
-
-Đặt thành `uci` để dùng panel Online Retail đã chuẩn bị. Chạy từ thư mục cha của `final_system/`:
+Chạy từ thư mục cha chứa `final_system/`:
 
 ```powershell
-& '.\.venv\Scripts\python.exe' -m final_system.training source-train
+& '.\.venv\Scripts\python.exe' -m final_system.training source-train --source lazada
 ```
 
-Có thể truyền `--source uci` hoặc `--source lazada` để ghi đè env cho một lần chạy. UCI cần `runtime/prepared/uci/weekly.csv` cùng manifest được tạo ở bước `prepare`. Lazada đọc `crawler/data/daily_product_info.csv` và `crawler/data/ref_products.csv`, rồi chuẩn hóa thành kỳ 3 ngày trong `final_system/pipeline/lazada.py`. Sau khi gộp kỳ, Lazada luôn gắn cờ và cap spike theo SKU bằng ngưỡng log-MAD tính trên các kỳ train; quantity gốc vẫn được lưu trong panel và metrics test được tính theo quantity gốc. Không cần biến env riêng để bật/tắt bước này.
+Lazada đọc `crawler/data/daily_product_info.csv` và `crawler/data/ref_products.csv`, gộp thành kỳ 3 ngày, rồi luôn gắn cờ và cap spike theo SKU bằng ngưỡng log-MAD tính từ kỳ train. Quantity gốc vẫn được lưu; metrics test chính được tính trên quantity gốc. Các run mới được lưu riêng dưới `runtime/source_runs/lazada/<run-id>/`.
 
-Mỗi run nằm dưới `final_system/runtime/source_runs/<source>/<run-id>/`, gồm `panel.csv`, `test_predictions.csv`, `metrics.json`, `model.json` và `manifest.json`. Model OLS theo SKU dùng `log1p(qty)`, log giá và xu hướng thời gian. Hệ số giá là quan hệ quan sát, không phải ước lượng nhân quả; do lịch sử Lazada hiện còn ngắn, metrics hiện chỉ để kiểm tra pipeline.
+Có thể chọn Lazada qua `FINAL_SYSTEM_DATA_SOURCE=lazada` trong `final_system/.env` rồi bỏ `--source lazada`. Biến này chỉ áp dụng cho lệnh `source-train`; nó không đổi dataset của pipeline cũ. Mỗi run gồm `panel.csv`, `test_predictions.csv`, `metrics.json`, `model.json` và `manifest.json`. Model OLS theo SKU dùng `log1p(qty)`, log giá và xu hướng thời gian. Hệ số giá là quan hệ quan sát, không phải ước lượng nhân quả; do lịch sử Lazada hiện còn ngắn, metrics hiện chỉ để kiểm tra pipeline.
 
 ### Huấn luyện lại PPO khi có đủ repo thí nghiệm
 
@@ -184,7 +180,7 @@ Lệnh lưu `final_system/runtime/ppo/m5-policy.json` và `m5-policy.evaluation.
 
 ## 6. Đọc kết quả và kiểm thử
 
-- **M5:** cả lưới và PPO dùng chung ARIMAX(1,0,0) để dự báo lượng bán tại mỗi giá. Bộ đã kiểm tra có ARIMAX cho **18.244 cặp SKU–cửa hàng** và PPO cho **10 cặp**. Lưới dò 41 mức và thử thêm giá hiện tại nếu giá đó hợp lệ và khác các mức trên lưới.
+- **M5:** cả lưới và PPO dùng chung ARIMAX(1,0,0) để dự báo lượng bán tại mỗi giá. Bộ đã kiểm tra có ARIMAX cho **18.244 cặp SKU–cửa hàng** và PPO cho **10 cặp**. Lưới dò 41 mức và thử thêm giá hiện tại nếu giá đó hợp lệ và khác các mức trên lưới.FINAL_SYSTEM_DATA_SOURCE
 - **Doanh thu:** `expected_revenue = price × predicted_qty` là doanh thu dự kiến một tuần. `fixed_reference` cung cấp giá đối chiếu cho 60 chuỗi đã chọn và các tuần sau validation.
 - **UCI:** `/forecast` hỗ trợ trung bình 4 tuần làm mốc đối chiếu với `dataset = uci`. Gửi 4 tuần liền trước, gồm cả dòng có `qty = 0` trong panel UCI. Benchmark ARIMAX UCI nằm trong `experiments/`. Ứng dụng cửa hàng và `/recommend-price` dùng M5.
 
