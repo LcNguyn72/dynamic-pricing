@@ -6,6 +6,7 @@ import argparse
 from concurrent.futures import ProcessPoolExecutor
 import csv
 import json
+import os
 from pathlib import Path
 
 import numpy as np
@@ -191,16 +192,35 @@ def train_fixed(root, directory, cache, workers):
 
 
 def main():
+    from .source_training import SOURCES, ENV_FILE, train_and_evaluate
+
+    def load_source_env():
+        if not ENV_FILE.is_file():
+            return
+        for raw in ENV_FILE.read_text(encoding="utf-8").splitlines():
+            line = raw.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            os.environ.setdefault(key.strip(), value.strip().strip("\"'"))
+
+    load_source_env()
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="action", required=True)
     fit = sub.add_parser("train", help="Fit fixed configurations from the prepared weekly data")
     saved = sub.add_parser("import-verified", help="Publish the locally available audited model parameters")
+    source_fit = sub.add_parser(
+        "source-train", help="Prepare, chronologically test, and save a separate UCI or Lazada model run"
+    )
     fit.add_argument("--prepared-root", type=Path, default=DEFAULT_PREPARED_ROOT)
     fit.add_argument("--cache-dir", type=Path, default=RUNTIME / "cache")
     fit.add_argument("--workers", type=int, default=6)
     saved.add_argument("--prepared-root", type=Path, default=PHASE1_ROOT)
     saved.add_argument("--step3-root", type=Path, default=STEP3)
     saved.add_argument("--followup-root", type=Path, default=FOLLOWUP)
+    source_fit.add_argument("--source", choices=SOURCES,
+                            default=os.getenv("FINAL_SYSTEM_DATA_SOURCE", "uci").strip().lower())
+    source_fit.add_argument("--output-root", type=Path, default=RUNTIME / "source_runs")
     for command in (fit, saved):
         command.add_argument("--model-dir", type=Path, default=DEFAULT_MODEL_DIR)
     args = parser.parse_args()
@@ -208,6 +228,10 @@ def main():
         if not 1 <= args.workers <= 61:
             parser.error("--workers must be between 1 and 61")
         train_fixed(args.prepared_root, args.model_dir, args.cache_dir, args.workers)
+    elif args.action == "source-train":
+        if args.source not in SOURCES:
+            parser.error(f"FINAL_SYSTEM_DATA_SOURCE must be one of {SOURCES}")
+        train_and_evaluate(args.source, args.output_root)
     else:
         import_verified(args.prepared_root, args.model_dir, args.step3_root, args.followup_root)
 

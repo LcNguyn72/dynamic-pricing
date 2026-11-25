@@ -1,0 +1,55 @@
+name: Web Crawler
+
+on:
+  schedule:
+    - cron: "0 20 * * *"
+    - cron: "30 22 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Run crawler
+        run: |
+          mkdir -p log
+          python -u crawl_product_by_date.py 2>&1 | tee log/app.log
+
+      - name: Commit updated CSV
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/daily_product_info.csv
+          if git diff --cached --quiet; then
+            echo "CSV không thay đổi, bỏ qua commit."
+            exit 0
+          fi
+          git commit -m "Update CSV"
+          git pull --rebase origin main
+          git push origin main
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crawler-logs
+          path: log/app.log
+          if-no-files-found: ignore
+          retention-days: 7

@@ -150,6 +150,26 @@ $python = '.\.venv\Scripts\python.exe'
 
 Có thể giảm `--workers` nếu máy thiếu RAM. Nếu đã có dữ liệu gốc ở nơi khác, dùng `--raw-root` cho `download` và `prepare`. Nếu muốn đặt panel ở nơi khác, dùng cùng `--prepared-root` cho `prepare` và `train`. Lệnh `final_system.training import-verified` dành cho repo đã có các artifact thí nghiệm Phase 1, ARIMAX và ARIMAX–PPO dùng để đối chiếu.
 
+### Chọn nguồn riêng để chuẩn hóa, train và test
+
+Luồng `source-train` nằm trong `final_system/` và chạy độc lập với protocol/bundle UCI–M5 ở trên. Mỗi lần chạy chọn đúng một nguồn, chia train/test theo thời gian, rồi lưu model, panel, dự đoán test, metrics và manifest mới trong thư mục run riêng. Luồng này không ghi đè `runtime/models/` hoặc artifacts của nguồn còn lại.
+
+Chọn nguồn trong `final_system/.env` (có thể tạo từ `.env.example`):
+
+```env
+FINAL_SYSTEM_DATA_SOURCE=lazada
+```
+
+Đặt thành `uci` để dùng panel Online Retail đã chuẩn bị. Chạy từ thư mục cha của `final_system/`:
+
+```powershell
+& '.\.venv\Scripts\python.exe' -m final_system.training source-train
+```
+
+Có thể truyền `--source uci` hoặc `--source lazada` để ghi đè env cho một lần chạy. UCI cần `runtime/prepared/uci/weekly.csv` cùng manifest được tạo ở bước `prepare`. Lazada đọc `crawler/data/daily_product_info.csv` và `crawler/data/ref_products.csv`, rồi chuẩn hóa thành kỳ 3 ngày trong `final_system/pipeline/lazada.py`. Sau khi gộp kỳ, Lazada luôn gắn cờ và cap spike theo SKU bằng ngưỡng log-MAD tính trên các kỳ train; quantity gốc vẫn được lưu trong panel và metrics test được tính theo quantity gốc. Không cần biến env riêng để bật/tắt bước này.
+
+Mỗi run nằm dưới `final_system/runtime/source_runs/<source>/<run-id>/`, gồm `panel.csv`, `test_predictions.csv`, `metrics.json`, `model.json` và `manifest.json`. Model OLS theo SKU dùng `log1p(qty)`, log giá và xu hướng thời gian. Hệ số giá là quan hệ quan sát, không phải ước lượng nhân quả; do lịch sử Lazada hiện còn ngắn, metrics hiện chỉ để kiểm tra pipeline.
+
 ### Huấn luyện lại PPO khi có đủ repo thí nghiệm
 
 Cần `experiments/` và `requirements-experiments.txt` ở thư mục gốc dự án. Sau khi hoàn tất phần tạo bộ mô hình, chạy:
