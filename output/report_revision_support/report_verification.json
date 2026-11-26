@@ -1,0 +1,19 @@
+{
+  "source_unchanged": true,
+  "section_2_1_text_exact": true,
+  "section_2_1_pages": 60,
+  "section_2_1_pixel_differences_pages": [
+    12,
+    14,
+    15,
+    16,
+    17,
+    18
+  ],
+  "final_pages": 101,
+  "final_docx_sha256": "ca88926298b558eb04043f3c31410d01fca8efe49c7bf6f56fbd458f771fd785",
+  "new_analysis": "output/report_revision_support/analysis_manifest.json",
+  "engine_tests": "14 passed",
+  "last_revision_pdf_text_changes": [],
+  "section_2_1_visual_check": "Same text and page layout; tiny font rasterization differences on six pages. Page 12 differs by 26 pixels after restoring original chapter heading spacing."
+}

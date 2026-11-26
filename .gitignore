@@ -7,6 +7,15 @@ __pycache__/
 .venv/
 venv/
 env/
+/tmp/comparison_venv/
+/tmp/comparison_mpl_cache/
+/tmp/comparison_smoke_artifacts/
+/tmp/report_comparison/
+/tmp/report_editorial/
+/tmp/report_revision/
+
+
+/output/documents/
 
 # Environment variables and secrets
 .env
@@ -29,4 +38,5 @@ data/
 models_2y/
 
 # Generated research datasets, checkpoints, and benchmark results
+
 

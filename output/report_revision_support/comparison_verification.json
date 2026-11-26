@@ -1,0 +1,21 @@
+{
+  "output": "D:\\sendhelp\\BI\\baocao\\code\\dynamic-pricing\\output\\documents\\CT25502-02-bo-sung-doi-chieu-kien-truc.docx",
+  "sha256": "028d11a6751f39f327aafbeccbce9a03596efc9a9f73004acc50728dea5e1bb6",
+  "pages": 108,
+  "source_unchanged": true,
+  "prior_revision_unchanged": true,
+  "section_2_1_exact_text": true,
+  "section_2_1_pdf_text_and_pagination_unchanged": true,
+  "section_2_1_tiny_font_raster_differences_pixels": {
+    "12": 26,
+    "14": 141,
+    "15": 63,
+    "16": 72,
+    "17": 129,
+    "18": 210
+  },
+  "figures": 15,
+  "three_new_flow_figures": true,
+  "new_model_training": false,
+  "qa": "Rendered by Microsoft Word; three new diagrams and all changed sections inspected. Protected pages compared to original."
+}

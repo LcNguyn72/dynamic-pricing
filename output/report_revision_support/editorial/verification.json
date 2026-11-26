@@ -1,0 +1,29 @@
+{
+  "output": "D:\\sendhelp\\BI\\baocao\\code\\dynamic-pricing\\output\\documents\\CT25502-02-ban-trinh-bay-do-an.docx",
+  "sha256": "2b408a346f164fae6543ba6b344876ce5f81db75be53c33a1403c88416baabed",
+  "pages": 115,
+  "base_unchanged": true,
+  "section_2_1_exact_text": true,
+  "results_tables_unchanged": 11,
+  "code_commands_and_internal_names_removed_outside_preserved_section": true,
+  "final_revised_pages": [
+    2,
+    3,
+    4,
+    5,
+    8,
+    75,
+    82,
+    90,
+    91,
+    105,
+    106,
+    107,
+    113,
+    114
+  ],
+  "rendered_and_visually_reviewed": true,
+  "protected_pages_with_same_text_and_pagination": 60,
+  "field_errors": [],
+  "qa_method": "Reviewed all revised pages; matched unchanged content to prior reviewed render; inspected final changed pages after compacting contents and correcting table layout."
+}
