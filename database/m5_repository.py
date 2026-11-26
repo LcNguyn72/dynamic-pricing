@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date, timedelta, timezone
 from math import isclose
 
 from .m5_connection import connect_m5
@@ -18,6 +18,94 @@ class M5DataError(ValueError):
 class M5Repository:
     def __init__(self, db):
         self.db = db
+
+    def catalog(self) -> list[dict]:
+        rows = self.db.execute("""
+            SELECT c.item_id, c.display_name, c.position, p.category_id,
+                   c.reference_week, MIN(o.price) AS min_price, COUNT(o.store_id) AS stores
+            FROM dbo.M5Catalog c
+            JOIN dbo.M5Products p ON p.item_id = c.item_id
+            JOIN dbo.M5CatalogOffers o ON o.item_id = c.item_id
+            GROUP BY c.item_id, c.display_name, c.position, p.category_id, c.reference_week
+            ORDER BY c.position
+        """)
+        return [{"sku": row.item_id, "name": row.display_name, "position": row.position,
+                 "category": row.category_id, "week": row.reference_week,
+                 "min_price": row.min_price, "store_count": row.stores} for row in rows]
+
+    def home_highlights(self) -> dict:
+        basket = self.db.execute("""
+            SELECT store_id, COUNT(*) AS items, SUM(price) AS total
+            FROM dbo.M5CatalogOffers
+            GROUP BY store_id
+            HAVING COUNT(*) = (SELECT COUNT(*) FROM dbo.M5Catalog)
+            ORDER BY total, store_id
+        """).fetchall()
+        best_sellers = self.db.execute("""
+            SELECT TOP (5) c.item_id, c.display_name, c.reference_week, SUM(CAST(w.quantity AS bigint)) AS qty
+            FROM dbo.M5Catalog c
+            JOIN dbo.M5StoreProducts s ON s.item_id = c.item_id
+            JOIN dbo.M5WeeklySales w ON w.store_id = s.store_id AND w.item_id = c.item_id
+                                     AND w.week_start = c.reference_week AND w.observed_sales = 1
+            GROUP BY c.item_id, c.display_name, c.reference_week, c.position
+            ORDER BY qty DESC, c.position
+        """).fetchall()
+        return {"basket": [{"store_id": row.store_id, "item_count": row.items, "total": row.total} for row in basket],
+                "best_sellers": [{"sku": row.item_id, "name": row.display_name, "qty": row.qty}
+                                 for row in best_sellers],
+                "week": best_sellers[0].reference_week if best_sellers else None}
+
+    def catalog_item(self, item: str) -> dict:
+        row = self.db.execute("""
+            SELECT c.display_name, c.position, p.category_id, c.reference_week
+            FROM dbo.M5Catalog c JOIN dbo.M5Products p ON p.item_id = c.item_id
+            WHERE c.item_id = ?
+        """, item).fetchone()
+        if row is None:
+            raise M5DataError("unknown_catalog_item", "Sản phẩm này chưa có trong danh mục.", 404)
+        offers = self.db.execute("""
+            SELECT o.store_id, o.state_id, o.price, o.reference_price, o.changed_at, w.quantity
+            FROM dbo.M5CatalogOffers o
+            JOIN dbo.M5WeeklySales w ON w.store_id = o.store_id AND w.item_id = o.item_id
+                                     AND w.week_start = o.reference_week
+            WHERE o.item_id = ? ORDER BY o.price, o.store_id
+        """, item).fetchall()
+        changes = self.db.execute("""
+            SELECT TOP (20) store_id, old_price, new_price, changed_at
+            FROM dbo.M5PriceChanges WHERE item_id = ? ORDER BY change_id DESC
+        """, item).fetchall()
+        return {"sku": item, "name": row.display_name, "position": row.position,
+                "category": row.category_id, "week": row.reference_week,
+                "offers": [{"store_id": offer.store_id, "state": offer.state_id, "price": offer.price,
+                            "reference_price": offer.reference_price, "observed_qty": offer.quantity,
+                            "edited": offer.changed_at is not None} for offer in offers],
+                "changes": [{"store_id": change.store_id, "old_price": change.old_price,
+                             "new_price": change.new_price,
+                             "changed_at": change.changed_at.replace(tzinfo=timezone.utc)}
+                            for change in changes]}
+
+    def set_catalog_price(self, item: str, store: str, price) -> dict:
+        self._check_item(store, item, lock=True)
+        current = self.db.execute("""
+            SELECT price FROM dbo.M5CatalogOffers WHERE item_id = ? AND store_id = ?
+        """, item, store).fetchone()
+        if current is None:
+            raise M5DataError("unknown_catalog_offer", "Chưa có giá cho lựa chọn này.", 404)
+        changed = price != current.price
+        if changed:
+            self.db.execute("""
+                INSERT dbo.M5PriceChanges (item_id, store_id, old_price, new_price)
+                VALUES (?, ?, ?, ?)
+            """, item, store, current.price, price)
+        return {"sku": item, "store_id": store, "price": price, "changed": changed}
+
+    def set_catalog_prices(self, item: str, stores: list[str], price) -> list[dict]:
+        # Lock rows in the same order across overlapping batches.
+        try:
+            return [self.set_catalog_price(item, store, price) for store in sorted(stores)]
+        except Exception:
+            self.db.rollback()
+            raise
 
     def stores(self) -> list[dict]:
         rows = self.db.execute("""
