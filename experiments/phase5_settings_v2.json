@@ -1,0 +1,488 @@
+{
+  "protocol_id": "song_full_scope_v2",
+  "protocol_sha256": "a73ad476b478a2583406f94b0f1215add26da6fef536d6215cb017b5214d1567",
+  "selection_evidence": {
+    "phase1": {
+      "path": "experiments/artifacts/phase1_v2/phase1_manifest.json",
+      "sha256": "161900a333d4e6d0617bba3a6b63624bbd6d308318d86d6c08c39fbcc8c10760"
+    },
+    "phase2_m5": {
+      "path": "experiments/artifacts/phase2_v2/m5_seed42/run.json",
+      "sha256": "c87b3e6f39b0879d2a1bdef1a0c5123e0702e11f45f6d4f0c5f611234ce274ba"
+    },
+    "phase3_m5": {
+      "path": "experiments/artifacts/phase3_v2/m5_seed42/run.json",
+      "sha256": "97228f3eb57f03b1566e393445d8202b640250912f6b0f32c52bea55430211f5"
+    },
+    "phase4_forecast_uci": {
+      "path": "experiments/artifacts/phase4_v2/forecast_uci/forecast_run.json",
+      "sha256": "97328107e442b43ecacbc89855ddcb557f71e4fcd006b8a12c9b6390da9d1f51"
+    },
+    "phase4_forecast_m5": {
+      "path": "experiments/artifacts/phase4_v2/forecast_m5/forecast_run.json",
+      "sha256": "b434f55bc9c7cc09adf3763c2e22f1f9f647800e21417f02f695813fe74f644e"
+    }
+  },
+  "selection_split": "validation",
+  "fit_scope_during_selection": "train_only",
+  "test_forecast_fit_scope": "train_plus_validation_after_validation_selection",
+  "test_pricing_forecaster_fit_scope": "train_only_validation_selects_epoch",
+  "full_scope_forecast_feature_rules": {
+    "sequence_sku_encoding": "one-hot through 256 SKUs, learned embedding above 256",
+    "sequence_embedding_size": "min(32, max(8, round(sqrt(n_skus))))",
+    "xgboost_sku_encoding": "dense one-hot through 256 SKUs, sparse one-hot above 256",
+    "model_config_dimensions": "Recompute from the full-scope inputs; preserve chosen training settings"
+  },
+  "forecast": {
+    "uci": {
+      "preferred": "naive_last",
+      "selection_metric": "micro RMSE on identical validation keys",
+      "settings_by_model": {
+        "naive_last": {
+          "rule": "previous panel week"
+        },
+        "arima_sparse_fallback": {
+          "order": [
+            1,
+            0,
+            1
+          ],
+          "minimum_observed_train": 12,
+          "fallback": {
+            "rows": 82,
+            "skus": 24
+          },
+          "require_convergence": true
+        },
+        "xgboost": {
+          "parameters": {
+            "max_depth": 3,
+            "n_estimators": 300,
+            "learning_rate": 0.05,
+            "min_child_weight": 3,
+            "subsample": 0.8,
+            "colsample_bytree": 0.9,
+            "objective": "reg:squarederror",
+            "tree_method": "hist",
+            "random_state": 42,
+            "n_jobs": 2
+          }
+        },
+        "xgboost_price": {
+          "parameters": {
+            "max_depth": 3,
+            "n_estimators": 300,
+            "learning_rate": 0.05,
+            "min_child_weight": 3,
+            "subsample": 0.8,
+            "colsample_bytree": 0.9,
+            "objective": "reg:squarederror",
+            "tree_method": "hist",
+            "random_state": 42,
+            "n_jobs": 2
+          }
+        },
+        "lstm": {
+          "model_config": {
+            "architecture": "lstm",
+            "lookback": 12,
+            "history_dim": 1,
+            "auxiliary_dim": 124
+          },
+          "learning_rate": 0.001,
+          "batch_size": 64,
+          "epoch_cap": 3,
+          "best_epoch": 3
+        },
+        "lstm_price": {
+          "model_config": {
+            "architecture": "lstm",
+            "lookback": 12,
+            "history_dim": 2,
+            "auxiliary_dim": 125
+          },
+          "learning_rate": 0.001,
+          "batch_size": 64,
+          "epoch_cap": 3,
+          "best_epoch": 3
+        },
+        "transformer": {
+          "model_config": {
+            "architecture": "transformer",
+            "lookback": 12,
+            "history_dim": 1,
+            "auxiliary_dim": 124
+          },
+          "learning_rate": 0.001,
+          "batch_size": 64,
+          "epoch_cap": 3,
+          "best_epoch": 1
+        },
+        "transformer_price": {
+          "model_config": {
+            "architecture": "transformer",
+            "lookback": 12,
+            "history_dim": 2,
+            "auxiliary_dim": 125
+          },
+          "learning_rate": 0.0005,
+          "batch_size": 64,
+          "epoch_cap": 3,
+          "best_epoch": 2
+        },
+        "song_transformer": {
+          "model": "SongTransformer",
+          "layers": 4,
+          "heads": 8,
+          "width": 128,
+          "learning_rate": 0.001,
+          "batch_size": 64,
+          "epoch_cap": 3,
+          "best_epoch": 2,
+          "reused_phase2_checkpoint_sha256": null
+        }
+      },
+      "screening_rows": 493,
+      "screening_skus": 120,
+      "scored_screening_skus": 88,
+      "screening_validation_keys_sha256": "e0616211d8ed91b13523502b962f15bf49a18064824f3599bac117cc78d98f0d",
+      "deferred_models": {
+        "TFT": "no V2 implementation in this screening budget",
+        "Informer": "no V2 implementation in this screening budget"
+      }
+    },
+    "m5": {
+      "preferred": "song_transformer",
+      "selection_metric": "micro RMSE on identical validation keys",
+      "settings_by_model": {
+        "naive_last": {
+          "rule": "previous panel week"
+        },
+        "arima_sparse_fallback": {
+          "order": [
+            1,
+            0,
+            1
+          ],
+          "minimum_observed_train": 12,
+          "fallback": {
+            "rows": 84,
+            "skus": 2
+          },
+          "require_convergence": true
+        },
+        "xgboost": {
+          "parameters": {
+            "max_depth": 5,
+            "n_estimators": 300,
+            "learning_rate": 0.05,
+            "min_child_weight": 3,
+            "subsample": 0.8,
+            "colsample_bytree": 0.9,
+            "objective": "reg:squarederror",
+            "tree_method": "hist",
+            "random_state": 42,
+            "n_jobs": 2
+          }
+        },
+        "xgboost_price": {
+          "parameters": {
+            "max_depth": 5,
+            "n_estimators": 300,
+            "learning_rate": 0.05,
+            "min_child_weight": 3,
+            "subsample": 0.8,
+            "colsample_bytree": 0.9,
+            "objective": "reg:squarederror",
+            "tree_method": "hist",
+            "random_state": 42,
+            "n_jobs": 2
+          }
+        },
+        "lstm": {
+          "model_config": {
+            "architecture": "lstm",
+            "lookback": 12,
+            "history_dim": 1,
+            "auxiliary_dim": 126
+          },
+          "learning_rate": 0.001,
+          "batch_size": 64,
+          "epoch_cap": 3,
+          "best_epoch": 3
+        },
+        "lstm_price": {
+          "model_config": {
+            "architecture": "lstm",
+            "lookback": 12,
+            "history_dim": 2,
+            "auxiliary_dim": 127
+          },
+          "learning_rate": 0.001,
+          "batch_size": 64,
+          "epoch_cap": 3,
+          "best_epoch": 3
+        },
+        "transformer": {
+          "model_config": {
+            "architecture": "transformer",
+            "lookback": 12,
+            "history_dim": 1,
+            "auxiliary_dim": 126
+          },
+          "learning_rate": 0.001,
+          "batch_size": 64,
+          "epoch_cap": 3,
+          "best_epoch": 2
+        },
+        "transformer_price": {
+          "model_config": {
+            "architecture": "transformer",
+            "lookback": 12,
+            "history_dim": 2,
+            "auxiliary_dim": 127
+          },
+          "learning_rate": 0.0005,
+          "batch_size": 64,
+          "epoch_cap": 3,
+          "best_epoch": 3
+        },
+        "song_transformer": {
+          "model": "SongTransformer",
+          "layers": 4,
+          "heads": 8,
+          "width": 128,
+          "learning_rate": 0.001,
+          "batch_size": 64,
+          "epoch_cap": 3,
+          "best_epoch": 3,
+          "reused_phase2_checkpoint_sha256": "ff1b1c388f708d1c45fe5b621d97db83b0c5239daa0dad51694b993f454c9f60"
+        }
+      },
+      "screening_rows": 5040,
+      "screening_skus": 120,
+      "scored_screening_skus": 120,
+      "screening_validation_keys_sha256": "2f341b85ce3f053b080bb98706ea04ff40a7eea540cf4d71df4319150d549504",
+      "deferred_models": {
+        "TFT": "no V2 implementation in this screening budget",
+        "Informer": "no V2 implementation in this screening budget"
+      }
+    }
+  },
+  "frozen_test_keys": {
+    "uci": {
+      "count": 18542,
+      "sha256": "6c7c37bbae2adb0cfcd75d98f3553c7b4f41b569ca2d0f2cb7df0f154279c689"
+    },
+    "m5": {
+      "count": 1220898,
+      "sha256": "306da95af8a5553312ab27760e0c1d306834749dcc5149b51040368c5d4f1af3"
+    }
+  },
+  "phase5_seeds": [
+    42,
+    123,
+    456,
+    789,
+    1024
+  ],
+  "pricing": {
+    "cohort_skus": [
+      "FOODS_3_090@CA_1",
+      "FOODS_3_586@CA_2",
+      "FOODS_3_090@CA_3",
+      "FOODS_3_090@CA_4",
+      "FOODS_3_586@TX_1",
+      "FOODS_3_586@TX_2",
+      "FOODS_3_586@TX_3",
+      "FOODS_3_226@WI_1",
+      "FOODS_3_226@WI_2",
+      "FOODS_3_090@WI_3"
+    ],
+    "test_decisions_per_seed": 200,
+    "primary_song_simulator": "gaussian_song",
+    "sensitivity_simulator": "lag_0.75",
+    "gaussian_seasonal_bandwidth_weeks": 13.0,
+    "sensitivity_weight": 0.75,
+    "ratio_limit": 2.0,
+    "grid_points": 41,
+    "training_timesteps_per_policy": 512,
+    "grid_rule": "Uniform grid in observed train support plus current price; maximize price times predicted demand, then closest to current price, then lower price.",
+    "ppo_hyperparameters": {
+      "actor_critic_layers": [
+        256,
+        256,
+        256
+      ],
+      "activation": "relu",
+      "learning_rate": 0.0003,
+      "gamma": 0.99,
+      "gae_lambda": 0.95,
+      "clip_range": 0.2,
+      "batch_size": 64,
+      "n_steps": 64
+    },
+    "feedback_config": {
+      "update_every": 10,
+      "feedback_capacity": 200,
+      "update_batch": 32
+    },
+    "feedback_torch_seed_offset": 2000003,
+    "pricing_demand_training_skus": [
+      "FOODS_1_085@WI_1",
+      "FOODS_1_218@CA_2",
+      "FOODS_1_218@TX_2",
+      "FOODS_2_197@CA_1",
+      "FOODS_2_360@TX_3",
+      "FOODS_2_360@WI_2",
+      "FOODS_3_007@WI_2",
+      "FOODS_3_030@TX_2",
+      "FOODS_3_030@TX_3",
+      "FOODS_3_042@WI_1",
+      "FOODS_3_080@CA_1",
+      "FOODS_3_080@CA_2",
+      "FOODS_3_080@CA_4",
+      "FOODS_3_080@TX_2",
+      "FOODS_3_080@WI_1",
+      "FOODS_3_090@CA_1",
+      "FOODS_3_090@CA_2",
+      "FOODS_3_090@CA_3",
+      "FOODS_3_090@CA_4",
+      "FOODS_3_090@TX_1",
+      "FOODS_3_090@TX_2",
+      "FOODS_3_090@TX_3",
+      "FOODS_3_090@WI_1",
+      "FOODS_3_090@WI_3",
+      "FOODS_3_099@TX_2",
+      "FOODS_3_120@CA_1",
+      "FOODS_3_120@CA_3",
+      "FOODS_3_202@CA_3",
+      "FOODS_3_202@CA_4",
+      "FOODS_3_202@TX_1",
+      "FOODS_3_202@TX_2",
+      "FOODS_3_202@TX_3",
+      "FOODS_3_226@WI_1",
+      "FOODS_3_226@WI_2",
+      "FOODS_3_226@WI_3",
+      "FOODS_3_234@TX_1",
+      "FOODS_3_234@WI_2",
+      "FOODS_3_234@WI_3",
+      "FOODS_3_252@CA_1",
+      "FOODS_3_252@CA_2",
+      "FOODS_3_252@CA_3",
+      "FOODS_3_252@CA_4",
+      "FOODS_3_252@TX_1",
+      "FOODS_3_252@TX_2",
+      "FOODS_3_252@TX_3",
+      "FOODS_3_252@WI_3",
+      "FOODS_3_281@CA_3",
+      "FOODS_3_318@CA_1",
+      "FOODS_3_318@CA_2",
+      "FOODS_3_318@WI_1",
+      "FOODS_3_318@WI_2",
+      "FOODS_3_318@WI_3",
+      "FOODS_3_319@CA_3",
+      "FOODS_3_319@CA_4",
+      "FOODS_3_376@WI_2",
+      "FOODS_3_376@WI_3",
+      "FOODS_3_377@TX_1",
+      "FOODS_3_377@TX_2",
+      "FOODS_3_377@TX_3",
+      "FOODS_3_412@WI_2",
+      "FOODS_3_435@WI_1",
+      "FOODS_3_446@CA_2",
+      "FOODS_3_462@WI_2",
+      "FOODS_3_491@CA_4",
+      "FOODS_3_491@WI_1",
+      "FOODS_3_541@CA_1",
+      "FOODS_3_541@CA_2",
+      "FOODS_3_541@CA_3",
+      "FOODS_3_541@CA_4",
+      "FOODS_3_541@TX_1",
+      "FOODS_3_547@WI_2",
+      "FOODS_3_555@CA_2",
+      "FOODS_3_555@CA_3",
+      "FOODS_3_555@TX_1",
+      "FOODS_3_555@TX_2",
+      "FOODS_3_555@TX_3",
+      "FOODS_3_555@WI_3",
+      "FOODS_3_586@CA_1",
+      "FOODS_3_586@CA_2",
+      "FOODS_3_586@CA_3",
+      "FOODS_3_586@CA_4",
+      "FOODS_3_586@TX_1",
+      "FOODS_3_586@TX_2",
+      "FOODS_3_586@TX_3",
+      "FOODS_3_586@WI_1",
+      "FOODS_3_586@WI_3",
+      "FOODS_3_587@CA_1",
+      "FOODS_3_587@CA_3",
+      "FOODS_3_587@CA_4",
+      "FOODS_3_587@TX_1",
+      "FOODS_3_587@TX_2",
+      "FOODS_3_635@CA_1",
+      "FOODS_3_635@CA_2",
+      "FOODS_3_635@CA_3",
+      "FOODS_3_635@CA_4",
+      "FOODS_3_635@TX_3",
+      "FOODS_3_668@WI_1",
+      "FOODS_3_681@WI_3",
+      "FOODS_3_694@TX_1",
+      "FOODS_3_694@TX_3",
+      "FOODS_3_694@WI_1",
+      "FOODS_3_694@WI_2",
+      "FOODS_3_694@WI_3",
+      "FOODS_3_711@WI_2",
+      "FOODS_3_714@CA_1",
+      "FOODS_3_714@CA_4",
+      "FOODS_3_714@TX_1",
+      "FOODS_3_714@TX_2",
+      "FOODS_3_714@TX_3",
+      "FOODS_3_714@WI_1",
+      "FOODS_3_714@WI_2",
+      "FOODS_3_714@WI_3",
+      "FOODS_3_723@TX_1",
+      "FOODS_3_723@TX_3",
+      "FOODS_3_723@WI_3",
+      "FOODS_3_804@CA_2",
+      "FOODS_3_808@CA_1",
+      "FOODS_3_808@CA_2",
+      "FOODS_3_808@CA_3",
+      "FOODS_3_808@CA_4"
+    ],
+    "phase5_methods": [
+      "fixed_mean",
+      "heuristic",
+      "ddpg",
+      "sac",
+      "ppo_frozen",
+      "ppo_feedback_gradient",
+      "ppo_feedback_no_gradient",
+      "ppo_frozen_no_gradient",
+      "grid_song",
+      "grid_xgboost_price"
+    ],
+    "top_by_mean_revenue_per_simulator": {
+      "gaussian_song": "ddpg",
+      "lag_0.75": "ddpg"
+    },
+    "simulators_passing_gate": [
+      "lag_0.75"
+    ],
+    "validation_candidate": "ddpg",
+    "decision_rule": "At least one simulator passes the observed-price check; same top policy across simulators, positive mean uplift and at least two wins against fixed among three noise seeds in each simulator passing the check.",
+    "fallback_if_no_candidate": "Keep fixed price as reference and the shortlist for simulation only",
+    "winning_policy_upper_bound_actions": {
+      "gaussian_song": {
+        "exact_upper_bound": 600,
+        "decisions": 600
+      },
+      "lag_0.75": {
+        "exact_upper_bound": 600,
+        "decisions": 600
+      }
+    },
+    "candidate_repeats_fixed_upper_bound_on_validation": true,
+    "additional_phase5_control": "fixed_max_observed_train_price"
+  }
+}

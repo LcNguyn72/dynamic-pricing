@@ -1,51 +1,10 @@
-# Python cache
 __pycache__/
 *.py[cod]
-*.pyo
-
-# Virtual environment
 .venv/
-venv/
-env/
-
-# Environment variables and secrets
 .env
 .env.*
 !.env.example
-
-# IDE and OS files
 .vscode/
 .idea/
-.DS_Store
-Thumbs.db
-
-# Logs
 *.log
-
-# Dataset
-data/
-
-# Generated models and processed data
-models_2y/
-
-# Generated comparison results
-compare_closure_out/
-compare_features_out/
-compare_features_diag_out/
-compare_outliers_out/
-do_tin_cay_out/
-so_sanh_out/
-
-# Generated charts and figures
-figures/
-
-# Python cache
-__pycache__/
-*.py[cod]
-*.pyo
-catboost_info/
-
-# Virtual environment
-.venv/
-venv/
-env/
+/du-lieu-v2-huong-dan.txt

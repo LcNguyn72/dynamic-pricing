@@ -1,0 +1,7 @@
+-r requirements.txt
+-r experiments/comparison_v3/requirements.txt
+scikit-learn>=1.4,<2
+xgboost>=3,<4
+reportlab>=4,<6
+pypdfium2>=4,<6
+Pillow>=10

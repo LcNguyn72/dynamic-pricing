@@ -1,0 +1,3 @@
+dataset,panel_rows,observed_rows,observed_zero_rows,observed_zero_pct,train_observed_rows,validation_observed_rows,test_observed_rows,test_scored_keys,train_series,train_constant_price_series
+uci,182898,97406,0,0.0,63711,15122,18573,18542,3387,384
+m5,8052113,6596591,1589024,24.088563320054252,4154795,1220898,1220898,1220898,29069,10781

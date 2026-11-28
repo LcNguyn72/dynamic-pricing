@@ -1,0 +1,27 @@
+{
+  "uci": {
+    "test_keys_matched": 18542,
+    "sha256": "6c7c37bbae2adb0cfcd75d98f3553c7b4f41b569ca2d0f2cb7df0f154279c689"
+  },
+  "m5": {
+    "test_keys_matched": 1220898,
+    "sha256": "306da95af8a5553312ab27760e0c1d306834749dcc5149b51040368c5d4f1af3"
+  },
+  "selected_by_validation_rmse": {
+    "uci": "mean_4",
+    "m5": "previous_week"
+  },
+  "purpose": "supplementary exploratory analysis; fixed V2 keys",
+  "models_predeclared": [
+    "previous_week",
+    "mean_4",
+    "mean_8",
+    "positive_median_8"
+  ],
+  "seconds": 46.56259879999925,
+  "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+  "numpy": "2.3.5",
+  "pandas": "3.0.1",
+  "source_protocol_sha256": "a73ad476b478a2583406f94b0f1215add26da6fef536d6215cb017b5214d1567",
+  "no_model_retraining": true
+}

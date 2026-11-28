@@ -1,0 +1,14 @@
+{
+  "id": "full_m5_song_serving_v3",
+  "evidence_status": "exploratory_rerun_previously_inspected_v2_test",
+  "datasets": ["uci", "m5"],
+  "forecast_scope": "all_frozen_v2_test_keys",
+  "preprocessing_fit": "train_only",
+  "model_fit": "train_only_validation_selects_checkpoint",
+  "seeds": [42, 123, 456, 789, 1024],
+  "song": {"layers": 4, "heads": 8, "width": 128, "lookback": 12, "learning_rates": [0.001, 0.0003], "batch_size": 512, "max_epochs": 30, "min_epochs": 5, "patience": 5, "gradient_clip": 1.0},
+  "arimax": {"order": [1, 0, 0], "minimum_pairs": 12, "maxiter": 50, "fit_scope": "train_only"},
+  "pricing": {"scope": "all_train_price_eligible_arimax_series_report_coverage", "horizon_weeks": 20, "grid_points": 41, "matched_training_steps": 8192, "training_episode_weeks": 20, "simulators": ["gaussian", "lag_0.75"], "primary_comparison": "arimax_grid_vs_song_ppo_feedback", "policies": ["fixed_mean", "fixed_upper", "arimax_grid", "arimax_ppo", "song_ppo_feedback"], "feedback_every": 10, "feedback_capacity": 200, "feedback_batch": 32},
+  "statistics": {"bootstrap_draws": 10000, "confidence": 0.95, "unit": "paired_complete_seed_runs", "multiple_comparisons": "primary comparison declared; other comparisons exploratory"},
+  "limitations": ["Song is a reimplementation, not author code", "V2 test was previously inspected", "Five seeds give limited uncertainty estimation", "Simulated revenue does not establish real-world uplift", "8192 PPO steps is a fixed budget, not evidence of convergence; report train-series coverage"]
+}

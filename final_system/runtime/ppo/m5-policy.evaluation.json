@@ -1,0 +1,177 @@
+{
+  "runs": [
+    {
+      "seed": 42,
+      "method": "fixed_train_median",
+      "revenue": 137516.29615585247,
+      "feedback_updates": 0,
+      "revenue_index": 100.0
+    },
+    {
+      "seed": 42,
+      "method": "arimax_grid_feedback",
+      "revenue": 161452.9120842725,
+      "feedback_updates": 51,
+      "revenue_index": 117.4063849867595
+    },
+    {
+      "seed": 42,
+      "method": "ppo_feedback",
+      "revenue": 131759.1344412217,
+      "feedback_updates": 169,
+      "revenue_index": 95.81346947556968
+    },
+    {
+      "seed": 123,
+      "method": "fixed_train_median",
+      "revenue": 136935.1798115065,
+      "feedback_updates": 0,
+      "revenue_index": 100.0
+    },
+    {
+      "seed": 123,
+      "method": "arimax_grid_feedback",
+      "revenue": 162101.44459667307,
+      "feedback_updates": 62,
+      "revenue_index": 118.37823181727904
+    },
+    {
+      "seed": 123,
+      "method": "ppo_feedback",
+      "revenue": 131317.5387770444,
+      "feedback_updates": 169,
+      "revenue_index": 95.89759107762163
+    },
+    {
+      "seed": 456,
+      "method": "fixed_train_median",
+      "revenue": 140169.9439188972,
+      "feedback_updates": 0,
+      "revenue_index": 100.0
+    },
+    {
+      "seed": 456,
+      "method": "arimax_grid_feedback",
+      "revenue": 170739.03879191107,
+      "feedback_updates": 50,
+      "revenue_index": 121.80859463759312
+    },
+    {
+      "seed": 456,
+      "method": "ppo_feedback",
+      "revenue": 132421.9111042159,
+      "feedback_updates": 169,
+      "revenue_index": 94.47240071725766
+    },
+    {
+      "seed": 789,
+      "method": "fixed_train_median",
+      "revenue": 140099.0839731395,
+      "feedback_updates": 0,
+      "revenue_index": 100.0
+    },
+    {
+      "seed": 789,
+      "method": "arimax_grid_feedback",
+      "revenue": 172016.600314311,
+      "feedback_updates": 51,
+      "revenue_index": 122.78210209232411
+    },
+    {
+      "seed": 789,
+      "method": "ppo_feedback",
+      "revenue": 132362.43293514568,
+      "feedback_updates": 169,
+      "revenue_index": 94.47772903391922
+    },
+    {
+      "seed": 1024,
+      "method": "fixed_train_median",
+      "revenue": 149230.73882754275,
+      "feedback_updates": 0,
+      "revenue_index": 100.0
+    },
+    {
+      "seed": 1024,
+      "method": "arimax_grid_feedback",
+      "revenue": 182086.88948323537,
+      "feedback_updates": 50,
+      "revenue_index": 122.0170126569316
+    },
+    {
+      "seed": 1024,
+      "method": "ppo_feedback",
+      "revenue": 140564.84381272615,
+      "feedback_updates": 169,
+      "revenue_index": 94.19295576574791
+    }
+  ],
+  "summary": {
+    "fixed_train_median": {
+      "revenue_mean": 140790.24853738767,
+      "revenue_std": 4941.778062869231,
+      "revenue_index_mean": 100.0,
+      "revenue_index_std": 0.0
+    },
+    "arimax_grid_feedback": {
+      "revenue_mean": 169679.3770540806,
+      "revenue_std": 8450.320208059044,
+      "revenue_index_mean": 120.47846523817748,
+      "revenue_index_std": 2.413077528185658
+    },
+    "ppo_feedback": {
+      "revenue_mean": 133685.17221407077,
+      "revenue_std": 3872.68184633063,
+      "revenue_index_mean": 94.97082921402321,
+      "revenue_index_std": 0.8163326554992411
+    }
+  },
+  "policy_version": "m5-ppo-v1-8050ef7ea555",
+  "pricing_scope": [
+    {
+      "sku": "FOODS_3_090",
+      "store_id": "CA_1"
+    },
+    {
+      "sku": "FOODS_3_090",
+      "store_id": "CA_3"
+    },
+    {
+      "sku": "FOODS_3_090",
+      "store_id": "CA_4"
+    },
+    {
+      "sku": "FOODS_3_090",
+      "store_id": "WI_3"
+    },
+    {
+      "sku": "FOODS_3_226",
+      "store_id": "WI_1"
+    },
+    {
+      "sku": "FOODS_3_226",
+      "store_id": "WI_2"
+    },
+    {
+      "sku": "FOODS_3_586",
+      "store_id": "CA_2"
+    },
+    {
+      "sku": "FOODS_3_586",
+      "store_id": "TX_1"
+    },
+    {
+      "sku": "FOODS_3_586",
+      "store_id": "TX_2"
+    },
+    {
+      "sku": "FOODS_3_586",
+      "store_id": "TX_3"
+    }
+  ],
+  "test_start": "2015-08-03",
+  "test_end": "2015-12-14",
+  "test_decisions_per_strategy_per_seed": 200,
+  "test_keys_sha256": "1d117c668cc03a5fa9cb61f23cb72aac25c983644bfbdb5ad8b76688e311f2bb",
+  "revenue_index_reference": "100 = fixed train-median price in same simulator and seed"
+}

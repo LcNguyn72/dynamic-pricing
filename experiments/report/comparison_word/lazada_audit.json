@@ -1,0 +1,116 @@
+{
+  "source": "Lazada",
+  "label_definition": "Daily sold units according to user; delivered manifest aggregates into three-day periods",
+  "price_currency": "VND according to user",
+  "panel_rows": 1817,
+  "panel_skus": 142,
+  "periods": 13,
+  "period_gaps_days": [
+    3
+  ],
+  "train_periods": 10,
+  "test_periods": 3,
+  "period_label_first": "2026-10-12",
+  "period_label_last": "2026-11-17",
+  "train_last_period_label": "2026-11-08",
+  "test_first_period_label": "2026-11-11",
+  "test_panel_rows": 418,
+  "test_prediction_rows": 172,
+  "test_prediction_skus": 58,
+  "missing_qty": 0,
+  "zero_qty_pct": 69.62025316455697,
+  "quantity": {
+    "count": 1817.0,
+    "mean": 2.9554210236653824,
+    "std": 39.90872977258331,
+    "min": 0.0,
+    "50%": 0.0,
+    "90%": 3.0,
+    "95%": 5.0,
+    "99%": 14.0,
+    "max": 1202.0
+  },
+  "price": {
+    "count": 1817.0,
+    "mean": 110086.34287286736,
+    "std": 68723.45129303618,
+    "min": 3900.0,
+    "50%": 103000.0,
+    "90%": 199000.0,
+    "95%": 232260.0,
+    "99%": 279000.0,
+    "max": 349000.0
+  },
+  "observed_sales_counts": {
+    "True": 1817
+  },
+  "file_hashes": {
+    "panel.csv": {
+      "actual": "ea6b39bb715b95a754c5ebd22dce3394d8952c1e6906aef7dfcf939a047a66de",
+      "expected": "ea6b39bb715b95a754c5ebd22dce3394d8952c1e6906aef7dfcf939a047a66de",
+      "matches": true
+    },
+    "test_predictions.csv": {
+      "actual": "6d53c64822fd3db562f2d665292981b2e31cf883a07dd2a2a75f7fcf56f5ae24",
+      "expected": "6d53c64822fd3db562f2d665292981b2e31cf883a07dd2a2a75f7fcf56f5ae24",
+      "matches": true
+    },
+    "metrics.json": {
+      "actual": "98d14147969ae653c905b1906270b7b01f4e6bfd5c0d237e835db5efeff3eda5",
+      "expected": "98d14147969ae653c905b1906270b7b01f4e6bfd5c0d237e835db5efeff3eda5",
+      "matches": true
+    }
+  },
+  "all_delivered_hashes_match": true,
+  "model_file_available": false,
+  "metrics_recomputed_match": true,
+  "prediction_keys_and_labels_match_panel": true,
+  "scores": {
+    "provided_ols": {
+      "mae": 31.08103566982843,
+      "rmse": 333.7256753267112,
+      "mae_log1p": 0.5860221184648264,
+      "wape_pct": 512.0630397711197,
+      "r2": -51.476619320363675
+    },
+    "last_train": {
+      "mae": 5.476744186046512,
+      "rmse": 45.94460770040578,
+      "mae_log1p": 0.5304906832606483,
+      "wape_pct": 90.22988505747126,
+      "r2": 0.005383400533995331
+    },
+    "mean_last_3_train": {
+      "mae": 5.532945736434108,
+      "rmse": 46.01825977324805,
+      "mae_log1p": 0.4712241398695094,
+      "wape_pct": 91.15581098339717,
+      "r2": 0.002191979623833662
+    }
+  },
+  "largest_error": {
+    "sku": "13395944448",
+    "week": "2026-11-17",
+    "actual": 3.0,
+    "prediction": 4347.48537343606,
+    "sse_share_pct": 98.53011525383059
+  },
+  "baseline_protocol": "Freeze last observed train qty or mean of last three observed train periods at the train cutoff; no test-label feedback.",
+  "manifest_reported_source_audit": {
+    "source": "Lazada crawler daily snapshots",
+    "daily_file": "/media/tran-vi-hung/Share/Linux/dynamic_pricing/dynamic-pricing/crawler/data/daily_product_info.csv",
+    "daily_sha256": "e9e2090016a7b27207f30eec88f078dd89f2c31cbda8828cbe32c19aad9203e8",
+    "products_file": "/media/tran-vi-hung/Share/Linux/dynamic_pricing/dynamic-pricing/crawler/data/ref_products.csv",
+    "products_sha256": "284f0a8b478fae7be43e613557b46b9fd3967ff3006b8ca6615bed9a35312926",
+    "raw_rows": 5554,
+    "valid_daily_rows": 5394,
+    "duplicate_rows_removed": 0,
+    "date_start": "2026-10-12",
+    "date_end": "2026-11-19",
+    "period_days": 3,
+    "panel_rows": 1817,
+    "periods": 13,
+    "skus": 142
+  },
+  "raw_daily_and_product_files_independently_verified": false
+}

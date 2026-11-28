@@ -1,0 +1,3 @@
+experiments/protocol_v2.json text eol=lf
+
+crawler/data/*.csv -text

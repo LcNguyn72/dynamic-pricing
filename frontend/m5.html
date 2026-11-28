@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8faff">
+  <title>Quầy Giá | So sánh giá cửa hàng</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/m5-assets/m5.css">
+  <script type="module" src="/m5-assets/m5.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#workspace">Chuyển đến nội dung</a>
+  <header class="masthead">
+    <div class="shell header-inner">
+      <a class="wordmark" href="#trang-chu"><span class="brand-mark" aria-hidden="true"></span>Quầy Giá</a>
+      <nav aria-label="Điều hướng chính">
+        <a href="#trang-chu" data-nav="home">Trang chủ</a>
+        <a href="#san-pham" data-nav="catalog">Sản phẩm</a>
+        <a href="#du-doan" data-nav="predict">Dự đoán giá</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="workspace" class="shell" tabindex="-1">
+    <section id="home" class="view" hidden>
+      <div class="hero">
+        <div class="hero-copy">
+          <h1>So giá ở<br> 10 cửa hàng</h1>
+          <p>Chọn một sản phẩm để xem nơi có giá thấp nhất.</p>
+          <a class="button button-primary" href="#san-pham">Xem sản phẩm</a>
+        </div>
+        <img class="hero-image" src="/m5-assets/m5-basket.webp" alt="Giỏ hàng màu xanh đựng thực phẩm và đồ gia dụng">
+      </div>
+      <section class="featured" aria-labelledby="featured-title">
+        <div class="section-heading">
+          <h2 id="featured-title">Sản phẩm nổi bật</h2>
+          <a class="text-link" href="#san-pham">Xem tất cả</a>
+        </div>
+        <div class="product-grid" id="featured-grid"></div>
+      </section>
+      <div class="home-highlights">
+        <section class="home-chart" aria-labelledby="basket-title">
+          <h2 id="basket-title">Giỏ mẫu ở đâu rẻ nhất?</h2>
+          <p id="basket-note" class="muted small"></p>
+          <ul id="home-basket" aria-label="Tổng giá giỏ mẫu theo cửa hàng"></ul>
+        </section>
+        <section class="home-chart" aria-labelledby="sellers-title">
+          <h2 id="sellers-title">5 sản phẩm bán nhiều nhất</h2>
+          <p id="sellers-note" class="muted small"></p>
+          <ul id="home-sellers" aria-label="Số lượng đã bán theo sản phẩm"></ul>
+        </section>
+      </div>
+    </section>
+
+    <section id="catalog" class="view" hidden>
+      <div class="page-heading"><h1>Sản phẩm</h1></div>
+      <div class="catalog-tools">
+        <div id="category-filters" class="filters" role="group" aria-label="Nhóm sản phẩm"></div>
+        <label class="search"><span class="visually-hidden">Tìm sản phẩm</span><input id="catalog-search" type="search" placeholder="Tìm sản phẩm"></label>
+      </div>
+      <p id="catalog-count" class="muted small" role="status"></p>
+      <div class="product-grid" id="catalog-grid"></div>
+    </section>
+
+    <section id="detail" class="view" hidden></section>
+    <section id="predict" class="view" hidden></section>
+    <p id="page-status" class="message" role="status"></p>
+    <p id="toast" class="toast" role="status" hidden></p>
+  </main>
+
+  <dialog id="price-dialog" aria-labelledby="dialog-title">
+    <form id="edit-form">
+      <h2 id="dialog-title">Chỉnh giá bán</h2>
+      <p id="edit-context" class="muted"></p>
+      <fieldset id="edit-store-picker" class="edit-store-picker" hidden>
+        <legend>Cửa hàng áp dụng</legend>
+        <div class="edit-store-toolbar">
+          <span id="edit-store-count" class="muted small" role="status"></span>
+          <button class="text-button" type="button" id="edit-toggle-stores">Chọn tất cả</button>
+        </div>
+        <div class="edit-store-options" id="edit-store-options"></div>
+      </fieldset>
+      <p id="edit-current"></p>
+      <label class="field">Giá mới (USD)<input id="edit-price" type="number" min="0.01" max="1000000" step="0.01" required inputmode="decimal"></label>
+      <label id="edit-preview-store-field" class="field" hidden>Xem dự kiến tại
+        <select id="edit-preview-store"></select>
+      </label>
+      <div id="edit-preview" class="edit-preview" aria-live="polite"></div>
+      <p id="edit-error" class="inline-error" role="alert"></p>
+      <div class="dialog-actions">
+        <button class="button button-neutral" type="button" id="edit-cancel">Hủy</button>
+        <button class="button button-primary" type="submit" id="edit-save">Lưu giá mới</button>
+      </div>
+    </form>
+  </dialog>
+
+  <footer class="footer">
+    <div class="shell footer-inner"><span>Quầy Giá</span></div>
+  </footer>
+</body>
+</html>

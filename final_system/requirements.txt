@@ -1,0 +1,9 @@
+fastapi>=0.115,<1
+pydantic>=2,<3
+uvicorn>=0.30,<1
+numpy>=2.0,<3
+pandas>=2.0,<4
+openpyxl>=3.1,<4
+scipy>=1.11,<2
+statsmodels>=0.14,<1
+threadpoolctl>=3,<4
